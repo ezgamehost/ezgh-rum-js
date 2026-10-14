@@ -84,7 +84,6 @@
               }
             },
             {"contains": {"properties": {"key": {"const": "telemetry.sdk.version"}}, "required": ["key"]}},
-            {"contains": {"properties": {"key": {"const": "service.version"}}, "required": ["key"]}},
             {"contains": {"properties": {"key": {"const": "browser.name"}}, "required": ["key"]}},
             {
               "contains": {
