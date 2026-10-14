@@ -1,7 +1,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { RouterProvider, createBrowserRouter } from "react-router"
-import { consent, flush, getSessionId, init } from "@ezgh/rum"
+import { consent, flush, getSessionId, init, setUser } from "@ezgh/rum"
 import { instrumentReactRouter } from "@ezgh/rum-react"
 import { routes } from "./routes.tsx"
 
@@ -22,6 +22,6 @@ init({
 
 const router = createBrowserRouter(routes)
 instrumentReactRouter(router)
-window.__rum = { flush, grant: consent.grant, revoke: consent.revoke, sessionId: getSessionId }
+window.__rum = { flush, grant: consent.grant, revoke: consent.revoke, sessionId: getSessionId, setUser: (id: string) => setUser({ id }) }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><RouterProvider router={router} /></StrictMode>)

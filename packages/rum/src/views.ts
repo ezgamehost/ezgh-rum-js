@@ -3,12 +3,12 @@
 import type { Attrs } from "./otlp.ts"
 import { newViewId } from "./ids.ts"
 import { capViewName } from "./route.ts"
-import type { Shift } from "./vitals.ts"
+import { newCls, type ClsState } from "./vitals.ts"
 
 export interface ViewCounts { errors: number, requests: number, long_tasks: number, actions: number }
 export type VitalName = "lcp" | "inp" | "cls" | "fcp" | "ttfb"
 export interface ViewState { id: string, name: string, start: number, loadingEnd?: number, update: number, counts: ViewCounts, vitals: Partial<Record<VitalName, number>> }
-export interface View extends ViewState { shifts: Shift[], interactions: Map<number, number> }
+export interface View extends ViewState { cls: ClsState, interactions: Map<number, number>, url: { path: string, query: string } }
 
 const zero = (): ViewCounts => ({ errors: 0, requests: 0, long_tasks: 0, actions: 0 })
 
@@ -30,6 +30,8 @@ export interface ViewHooks {
   emit(v: View, attrs: Attrs): void
   /** The view's name changed (framework template): open spans of the view follow it. */
   renamed(v: View): void
+  /** The page's redacted URL when a view starts (its events carry it, not a later route's). */
+  url(): { path: string, query: string }
 }
 
 export class Views {
@@ -40,7 +42,7 @@ export class Views {
   /** Ends the current view (final event), then starts a new one. */
   start(name: string, startMs: number, now: number): View {
     if (this.current) this.end(now, true)
-    this.current = { id: newViewId(), name: capViewName(name), start: startMs, update: 0, counts: zero(), vitals: {}, shifts: [], interactions: new Map() }
+    this.current = { id: newViewId(), name: capViewName(name), start: startMs, update: 0, counts: zero(), vitals: {}, cls: newCls(), interactions: new Map(), url: this.hooks.url() }
     return this.current
   }
 

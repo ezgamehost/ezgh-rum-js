@@ -3,6 +3,7 @@
 // <meta name="traceparent"> (a server-rendered page) parents it into the server's trace.
 import type { Rum } from "../rum.ts"
 import { SPAN_KIND_INTERNAL } from "../otlp.ts"
+import { afterPaint } from "../quiescence.ts"
 import { nowMs } from "../time.ts"
 import { parseTraceparent } from "../traceparent.ts"
 
@@ -28,10 +29,11 @@ export function installNavigation(r: Rum): void {
   const span = r.tracer.start("documentLoad", SPAN_KIND_INTERNAL, origin, parent)
   const loadView = r.views.current
 
-  const end = r.guard.wrap(() => {
+  const end = r.guard.wrap((late: boolean) => {
     if (!span.open) return
     const nav = performance.getEntriesByType("navigation")[0]
-    const endMs = nowMs()
+    // Started after the load (late init, or consent granted later): the load's own end, not now.
+    const endMs = late && nav && nav.loadEventEnd > 0 ? origin + nav.loadEventEnd : nowMs()
     if (nav) {
       for (const [name, a, b] of PHASES) {
         const s = nav[a], e = nav[b]
@@ -52,14 +54,10 @@ export function installNavigation(r: Rum): void {
         }
       }
     }
-    if (loadView) loadView.loadingEnd = endMs
+    if (loadView && r.isLoadView(loadView)) loadView.loadingEnd = endMs
     r.tracer.end(span, endMs)
   })
-  const afterPaint = () => {
-    if (document.visibilityState === "hidden") end()
-    else requestAnimationFrame(() => setTimeout(end, 0))
-  }
-  const loaded = () => ((performance.getEntriesByType("navigation")[0])?.loadEventEnd ?? 0) > 0
-  if (loaded() || document.readyState === "complete") afterPaint()
-  else addEventListener("load", () => setTimeout(r.guard.wrap(afterPaint), 0), { once: true })
+  const loaded = () => (performance.getEntriesByType("navigation")[0]?.loadEventEnd ?? 0) > 0
+  if (loaded() || document.readyState === "complete") end(true)
+  else addEventListener("load", () => setTimeout(r.guard.wrap(() => afterPaint(fn => r.guard.wrap(fn), () => end(false))), 0), { once: true })
 }

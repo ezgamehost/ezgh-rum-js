@@ -33,7 +33,7 @@ export function classify(status: number, retryAfter: string | null, now: number)
 export type Bytes = Uint8Array<ArrayBuffer>
 export interface ExporterConfig { endpoint: string, tunnel?: string, token: string, sdkVersion: string, resource: string }
 export interface ExporterDeps { fetch: typeof fetch, sendBeacon?: (url: string, data: Blob) => boolean, compress?: (s: string) => Promise<Bytes | undefined>, now: () => number }
-export type StopReason = "unauthorized" | "budget" | "unreachable"
+export type StopReason = "unauthorized" | "budget" | "unreachable" | "revoked"
 
 export function gzipCompressor(): ((s: string) => Promise<Bytes | undefined>) | undefined {
   if (typeof CompressionStream === "undefined") return undefined
@@ -82,6 +82,13 @@ export class Exporter {
       return url === base || url.startsWith(base + "?") || url.startsWith(base + "#")
     }
     return url.startsWith(`${this.cfg.endpoint.replace(/\/+$/, "")}/v1/`)
+  }
+
+  /** Consent revoked: drop the queue, and nothing in flight is sent after this. */
+  halt(): void {
+    this.stopped = "revoked"
+    this.queue.takeAll()
+    if (this.compressing) this.compressing.claimed = true
   }
 
   enqueue(i: Item): void {
@@ -186,7 +193,7 @@ export class Exporter {
       finally {
         if (this.compressing === pending) this.compressing = undefined
       }
-      if (pending.claimed) return []
+      if (pending.claimed || this.stopped) return []
     }
     const payload: string | Bytes = z ?? raw
     const size = typeof payload === "string" ? utf8Length(payload) : payload.byteLength

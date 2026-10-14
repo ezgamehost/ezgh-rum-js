@@ -10,6 +10,7 @@ export function installHistory(r: Rum): void {
   const changed = r.guard.wrap(() => {
     if (!r.active || location.pathname === path) return
     path = location.pathname
+    r.sessions.touch(Date.now()) // a navigation is activity
     const from = r.views.current?.name ?? ""
     const start = nowMs()
     const view = r.views.start(r.templateOf(path), start, start)

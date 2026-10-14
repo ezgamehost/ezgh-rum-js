@@ -29,11 +29,13 @@ import { Exporter, gzipCompressor, type StopReason } from "./transport.ts"
 import { parseUserAgent, type UAHints } from "./useragent.ts"
 import { SDK_VERSION } from "./version.ts"
 import { Views, type View, type VitalName } from "./views.ts"
-import { clsOf, inpOf, type Shift } from "./vitals.ts"
+import { addShift, inpOf, type Shift } from "./vitals.ts"
 
+type RecordView = { id: string, name: string, url?: { path: string, query: string } }
 const FLUSH_EVERY_MS = 10_000
 const FLUSH_AT_RECORDS = 50
 const HIDE_DEBOUNCE_MS = 100
+const MAX_INTERACTIONS = 1000
 const FRAMEWORK_KEY = /^ezgh\.rum\.(react|nextjs|vue|angular)\.[a-z_]+$/
 
 function localStorageKV(): KV | undefined {
@@ -65,6 +67,8 @@ export class Rum {
   active = false
   started = false
   revoked = false
+  /** A framework's route template set before the SDK started (consent pending). */
+  pendingTemplate: string | undefined
   private loadViewId: string | undefined
   private timer: ReturnType<typeof setInterval> | undefined
   private lastHide = -Infinity
@@ -72,6 +76,7 @@ export class Rum {
   private lcpObserver: PerformanceObserver | undefined
   private shiftObserver: PerformanceObserver | undefined
   private eventObserver: PerformanceObserver | undefined
+  private firstInputObserver: PerformanceObserver | undefined
 
   constructor(readonly opts: ResolvedOptions) {
     this.guard = new Guard(() => this.stop(false))
@@ -90,6 +95,10 @@ export class Rum {
       refresh: v => this.refreshVitals(v),
       emit: (v, attrs) => this.emitLog({ severity: SEVERITY_INFO, attrs }, v),
       renamed: v => this.renamed(v),
+      url: () => {
+        const u = this.redact(location.href)
+        return { path: u.path || "/", query: u.query }
+      },
     })
     this.tracer = new Tracer(() => this.views.current ?? { id: "", name: "/" }, (s, end) => this.emitSpan(s, end))
     this.quiescence = new Quiescence(fn => this.guard.wrap(fn))
@@ -98,32 +107,63 @@ export class Rum {
 
   /** On init with consent granted, or on consent.grant(). */
   start(): void {
-    if (this.started || this.revoked) return
+    if (this.started || this.revoked || this.guard.disabled) return
     this.started = true
-    this.guard.run(() => {
+    const ok = this.guard.run(() => {
       const now = Date.now()
       const s = this.sessions.touch(now)
-      if (!s.sampled || (s.stoppedUntil ?? 0) > now) return
+      if (!s.sampled || (s.stoppedUntil ?? 0) > now) return false
       this.exporter.setResource(encodeAttrs(this.resource()))
       this.active = true
-      const v = this.views.start(this.initialViewName(), performance.timeOrigin, nowMs())
-      this.loadViewId = v.id
-      this.observeVitals()
-      installNavigation(this)
-      installHistory(this)
-      this.interactions.install()
-      installHttp(this)
-      if (this.opts.trackLongTasks) installLongTasks(this)
-      installGlobalErrors(this)
-      installConsole(this)
+      // The load view is the page the browser loaded. A start after a client-side navigation
+      // (consent granted later) begins an ordinary view now, without the load's vitals.
+      const nav = performance.getEntriesByType("navigation")[0]
+      let navPath = location.pathname
+      try {
+        if (nav) navPath = new URL(nav.name).pathname
+      }
+      catch { /* keep the current path */ }
+      const isLoad = navPath === location.pathname
+      const v = this.views.start(this.initialViewName(), isLoad ? performance.timeOrigin : nowMs(), nowMs())
+      this.loadViewId = isLoad ? v.id : undefined
+      if (this.pendingTemplate) this.views.rename(this.pendingTemplate)
+      this.pendingTemplate = undefined
+      // The flush timer and the hide listeners first, so a failing instrumentation can't cost them.
       this.timer = setInterval(this.guard.wrap(() => void this.exporter.flush()), FLUSH_EVERY_MS)
       const onHide = this.guard.wrap(() => this.onHide())
       addEventListener("visibilitychange", this.guard.wrap(() => {
         if (document.visibilityState === "hidden") onHide()
-        else this.hiddenEmitted = false
+        else {
+          this.hiddenEmitted = false
+          if (this.active) this.sessions.touch(Date.now())
+        }
       }), true)
       addEventListener("pagehide", onHide, true)
+      // Activity keeps the session alive (30 minutes of inactivity end it); background requests don't.
+      const activity = this.guard.wrap(() => {
+        if (this.active) this.sessions.touch(Date.now())
+      })
+      for (const type of ["pointerdown", "keydown", "scroll"]) addEventListener(type, activity, { capture: true, passive: true })
+      return true
     })
+    if (!ok) return
+    const installs: Array<() => void> = [
+      () => this.observeVitals(),
+      () => installNavigation(this),
+      () => installHistory(this),
+      () => this.interactions.install(),
+      () => installHttp(this),
+      () => {
+        if (this.opts.trackLongTasks) installLongTasks(this)
+      },
+      () => installGlobalErrors(this),
+      () => installConsole(this),
+    ]
+    for (const install of installs) this.guard.run(install)
+  }
+
+  isLoadView(v: View): boolean {
+    return v.id === this.loadViewId
   }
 
   stop(clear: boolean): void {
@@ -134,6 +174,7 @@ export class Rum {
       this.lcpObserver?.disconnect()
       this.shiftObserver?.disconnect()
       this.eventObserver?.disconnect()
+      this.firstInputObserver?.disconnect()
     }
     catch { /* gone */ }
     if (clear) {
@@ -144,6 +185,7 @@ export class Rum {
 
   revoke(): void {
     this.revoked = true
+    this.exporter.halt() // nothing in flight is sent after this
     this.stop(true)
   }
 
@@ -163,6 +205,7 @@ export class Rum {
   }
 
   private onStop(r: StopReason, until?: number): void {
+    if (this.revoked) return
     if (r === "budget" && until !== undefined) this.sessions.stopUntil(Date.now(), until)
     this.stop(false)
   }
@@ -203,6 +246,11 @@ export class Rum {
     if (supported.includes("event")) {
       this.eventObserver = new PerformanceObserver(this.guard.wrap((list: PerformanceObserverEntryList) => this.takeEvents(list.getEntries())))
       this.eventObserver.observe({ type: "event", buffered: true, durationThreshold: 40 })
+      // As web-vitals does: the first input is seen even when it's under the 40 ms threshold.
+      if (supported.includes("first-input")) {
+        this.firstInputObserver = new PerformanceObserver(this.guard.wrap((list: PerformanceObserverEntryList) => this.takeEvents(list.getEntries())))
+        this.firstInputObserver.observe({ type: "first-input", buffered: true })
+      }
     }
   }
 
@@ -218,8 +266,7 @@ export class Rum {
     const v = this.views.current
     if (!v) return
     for (const e of entries) {
-      const { value, startTime, hadRecentInput } = e as PerformanceEntry & Shift
-      v.shifts.push({ value, startTime, hadRecentInput })
+      addShift(v.cls, e as PerformanceEntry & Shift)
     }
   }
 
@@ -230,6 +277,16 @@ export class Rum {
       const { interactionId, duration } = e as PerformanceEntry & { interactionId?: number }
       if (!interactionId) continue
       v.interactions.set(interactionId, Math.max(v.interactions.get(interactionId) ?? 0, duration))
+      if (v.interactions.size > MAX_INTERACTIONS) { // bounded: drop the shortest
+        let minId = 0, min = Infinity
+        for (const [id, d] of v.interactions) {
+          if (d < min) {
+            min = d
+            minId = id
+          }
+        }
+        v.interactions.delete(minId)
+      }
     }
   }
 
@@ -238,7 +295,7 @@ export class Rum {
     if (this.lcpObserver) this.takeLcp(this.lcpObserver.takeRecords())
     if (this.shiftObserver) {
       this.takeShifts(this.shiftObserver.takeRecords())
-      v.vitals.cls = clsOf(v.shifts)
+      v.vitals.cls = v.cls.best
     }
     if (this.eventObserver) this.takeEvents(this.eventObserver.takeRecords())
     const inp = inpOf([...v.interactions.values()])
@@ -259,15 +316,15 @@ export class Rum {
   // Record attributes in order: customer attributes, url.*, session.id, the view, user.id, then the
   // record's own. Later keys win, so customers can't overwrite the SDK's. Answers undefined when the
   // record must not be sent.
-  private recordAttrs(own: Attrs, view: { id: string, name: string } | undefined): Attrs | undefined {
+  private recordAttrs(own: Attrs, view: RecordView | undefined): Attrs | undefined {
     const now = Date.now()
-    const s = this.sessions.touch(now)
+    const s = this.sessions.current(now)
     if (!s.sampled) return undefined
     if ((s.stoppedUntil ?? 0) > now) { // another tab hit the daily budget
       this.stop(false)
       return undefined
     }
-    const u = this.redact(location.href)
+    const u = view?.url ?? this.redact(location.href) // a view's events carry the view's own URL
     const a: Attrs = { ...this.attributes.get(), "url.path": u.path || "/" }
     if (u.query) a["url.query"] = u.query
     a["session.id"] = s.id
@@ -286,7 +343,12 @@ export class Rum {
       const ev: RumEvent = { kind, name, attributes: attrs }
       const out = hook(ev)
       if (!out || typeof out !== "object" || typeof out.attributes !== "object" || out.attributes === null) return undefined
-      return out.attributes
+      // Only values OTLP attributes can hold; anything else the hook put there is dropped.
+      const clean: Attrs = {}
+      for (const [k, v] of Object.entries(out.attributes as Record<string, unknown>)) {
+        if (typeof v === "string" || typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v))) clean[k] = v
+      }
+      return clean
     }
     catch {
       return undefined // a broken redaction hook never leaks
@@ -309,7 +371,7 @@ export class Rum {
       name: s.name, kind: s.kind, startMs: s.startMs, endMs, attrs, ...(s.error ? { error: true } : {}) }))
   }
 
-  emitLog(l: { severity: 9 | 17, body?: string, attrs: Attrs, traceId?: string, spanId?: string }, view?: { id: string, name: string }): void {
+  emitLog(l: { severity: 9 | 17, body?: string, attrs: Attrs, traceId?: string, spanId?: string }, view?: RecordView): void {
     if (!this.active) return
     const base = this.recordAttrs(l.attrs, view ?? this.views.current)
     if (!base) return

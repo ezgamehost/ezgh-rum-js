@@ -1,4 +1,4 @@
-import { test, expect, waitFor, captured, spans } from "./intake.ts"
+import { test, expect, waitFor, captured, spans, attr } from "./intake.ts"
 
 test("no DOM text, input values, secrets or fragments; redacted query parameters", async ({ page, ct }) => {
   await page.goto(`/?ct=${ct}#frag-ment`)
@@ -22,9 +22,11 @@ test("pending consent sends and stores nothing until granted; revoke clears and 
   await page.waitForTimeout(1500)
   expect(await captured(ct)).toHaveLength(0)
   expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).toBeNull()
+  await page.evaluate(() => window.__rum!.setUser("u-123")) // kept for after consent
   await page.getByRole("button", { name: "Grant consent" }).click()
   await page.getByRole("button", { name: "Fetch", exact: true }).click()
-  await waitFor(ct, c => c.length > 0, page)
+  const granted = await waitFor(ct, c => spans(c).some(s => s.name === "HTTP GET"), page)
+  expect(attr(spans(granted).find(s => s.name === "HTTP GET")!.attributes, "user.id")).toBe("u-123")
   expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).not.toBeNull()
   await page.evaluate(() => window.__rum!.revoke())
   expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).toBeNull()

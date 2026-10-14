@@ -5,6 +5,22 @@ import { nowMs } from "./time.ts"
 const QUIET_MS = 100
 const MAX_MS = 30_000
 
+/**
+ * Runs `fn` once at the next paint, or after 100 ms if no frame comes first (a page hidden now or
+ * later gets no frames until it's visible again).
+ */
+export function afterPaint(wrap: <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => void, fn: () => void): void {
+  let done = false
+  const once = wrap(() => {
+    if (done) return
+    done = true
+    fn()
+  })
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return once()
+  requestAnimationFrame(once)
+  setTimeout(once, 100)
+}
+
 export class Quiescence {
   private pending = 0
   private lastDone = 0
@@ -25,8 +41,7 @@ export class Quiescence {
         return
       }
       if (this.pending === 0 && now - Math.max(this.lastDone, startMs) >= QUIET_MS) {
-        if (typeof document !== "undefined" && document.visibilityState === "hidden") cb(nowMs()) // no paint while hidden
-        else requestAnimationFrame(this.wrap(() => cb(nowMs())))
+        afterPaint(this.wrap, () => cb(nowMs()))
         return
       }
       setTimeout(tick, 50)

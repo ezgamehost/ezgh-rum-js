@@ -24,6 +24,16 @@ function warn(msg: string): void {
   catch { /* no console */ }
 }
 
+/** Configuration (user, attributes, route templates) is kept from init on, even before consent. */
+function configurable(fn: (r: Rum) => void): void {
+  const r = rum
+  if (!r || r.revoked || r.guard.disabled) return
+  try {
+    fn(r)
+  }
+  catch { /* never throws */ }
+}
+
 function safe(fn: (r: Rum) => void): void {
   const r = rum
   if (!r || !r.active || r.guard.disabled) return
@@ -50,20 +60,20 @@ export function init(options: InitOptions): void {
 }
 
 export function setUser(user: { id: string }): void {
-  safe((r) => {
+  configurable((r) => {
     const id = user && typeof user.id === "string" ? user.id.slice(0, 256) : undefined
     r.userId = id || undefined
   })
 }
 
 export function clearUser(): void {
-  safe((r) => {
+  configurable((r) => {
     r.userId = undefined
   })
 }
 
 export function setAttributes(attrs: Record<string, AttrValue>): void {
-  safe((r) => {
+  configurable((r) => {
     for (const k of r.attributes.set(attrs ?? {})) warn(`setAttributes: "${k}" is set by the SDK; ignored`)
   })
 }
@@ -116,8 +126,10 @@ export function flush(): Promise<void> {
 /** Internal: used by @ezgh/rum-react, -nextjs, -vue and -angular. Not part of the public API. */
 export const _integration = {
   setRouteTemplate(template: string): void {
-    safe((r) => {
-      if (typeof template === "string" && template) r.views.rename(template)
+    configurable((r) => {
+      if (typeof template !== "string" || !template) return
+      if (r.active) r.guard.run(() => r.views.rename(template))
+      else if (!r.started) r.pendingTemplate = template
     })
   },
   captureBoundaryError(err: unknown, attrs?: Record<string, AttrValue>): void {

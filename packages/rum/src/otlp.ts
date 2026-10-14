@@ -18,7 +18,7 @@ function anyValue(v: AttrValue): string {
   if (typeof v === "string") return `{"stringValue":${q(v)}}`
   if (typeof v === "boolean") return `{"boolValue":${v}}`
   if (Number.isSafeInteger(v)) return `{"intValue":"${v}"}`
-  return Number.isFinite(v) ? `{"doubleValue":${v}}` : `{"stringValue":"${String(v)}"}`
+  return Number.isFinite(v) ? `{"doubleValue":${v}}` : `{"stringValue":${q(String(v))}}`
 }
 export function encodeAttrs(a: Attrs): string {
   const parts: string[] = []

@@ -8,11 +8,11 @@ import { nowMs } from "../time.ts"
 import { formatTraceparent } from "../traceparent.ts"
 import type { Span } from "../tracer.ts"
 
-interface Pending { span: Span, url: string, method: string, start: number, wall: number, traced: boolean }
+interface Pending { span: Span, url: string, method: string, start: number, wall: number, traced: boolean, done?: boolean }
 
 function begin(r: Rum, method: string, raw: string): Pending | undefined {
   if (!r.active) return undefined
-  const url = new URL(raw, location.href)
+  const url = new URL(raw, document.baseURI) // as fetch and XHR resolve it
   if (r.exporter.isOwnUrl(url.href)) return undefined
   r.interactions.materializeRecent()
   const m = method.toUpperCase()
@@ -27,6 +27,8 @@ function begin(r: Rum, method: string, raw: string): Pending | undefined {
 }
 
 function finish(r: Rum, p: Pending, status: number | undefined): void {
+  if (p.done) return
+  p.done = true
   const end = nowMs()
   r.quiescence.done()
   if (status) p.span.attrs["http.response.status_code"] = status
@@ -55,7 +57,9 @@ export function installHttp(r: Rum): void {
         if (extra.length) {
           const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
           for (const [k, v] of extra) headers.set(k, v)
-          nextInit = { ...init, headers }
+          // A non-empty init resets a Request's referrer settings: keep them.
+          const keep = input instanceof Request ? { referrer: init?.referrer ?? input.referrer, referrerPolicy: init?.referrerPolicy ?? input.referrerPolicy } : {}
+          nextInit = { ...init, ...keep, headers }
         }
       }
       return pending
@@ -89,14 +93,21 @@ export function installHttp(r: Rum): void {
     return setRequestHeader.call(this, name, value)
   }
   proto.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
-    r.guard.run(() => {
+    const p = r.guard.run(() => {
       const i = info.get(this)
-      if (!i) return
-      const p = begin(r, i.method, i.url)
-      if (!p) return
-      for (const [k, v] of traceHeaders(r, p)) if (!i.headers.has(k)) setRequestHeader.call(this, k, v)
-      this.addEventListener("loadend", r.guard.wrap(() => finish(r, p, this.status)), { once: true })
+      if (!i) return undefined
+      const pending = begin(r, i.method, i.url)
+      if (!pending) return undefined
+      for (const [k, v] of traceHeaders(r, pending)) if (!i.headers.has(k)) setRequestHeader.call(this, k, v)
+      this.addEventListener("loadend", r.guard.wrap(() => finish(r, pending, this.status)), { once: true })
+      return pending
     })
-    return send.call(this, body)
+    try {
+      send.call(this, body)
+    }
+    catch (e) {
+      if (p) r.guard.run(() => finish(r, p, undefined)) // no loadend comes
+      throw e
+    }
   }
 }
