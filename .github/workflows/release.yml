@@ -1,0 +1,56 @@
+name: Release
+
+# On a v* tag (cut after `bun scripts/version.ts X.Y.Z` is committed on main): check, pack, and
+# publish the six packages to npm with provenance, then a GitHub release carrying the script tag's
+# SRI hash. Re-running skips versions already on npm. Needs the @ezgh npm scope and an NPM_TOKEN
+# secret (owner actions); until then nothing runs it.
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - name: the tag matches every package version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          for p in packages/*/package.json; do
+            [ "$(node -p "require('./$p').version")" = "$v" ] || { echo "::error::$p isn't $v"; exit 1; }
+          done
+      - run: bun run check
+      - run: bun scripts/pack.ts
+      - name: publish (dependencies first)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          [ -n "$NODE_AUTH_TOKEN" ] || { echo "::error::NPM_TOKEN isn't set"; exit 1; }
+          for p in rum rum-build rum-react rum-vue rum-angular rum-nextjs; do
+            name=$(node -p "require('./packages/$p/package.json').name")
+            v=$(node -p "require('./packages/$p/package.json').version")
+            if npm view "$name@$v" version >/dev/null 2>&1; then echo "$name@$v is already published"; continue; fi
+            npm publish ".packs/$(echo "$name" | sed 's|@||;s|/|-|')-$v.tgz" --provenance --access public
+          done
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file .packs/release-notes.md
