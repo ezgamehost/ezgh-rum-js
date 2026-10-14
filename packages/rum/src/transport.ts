@@ -58,6 +58,11 @@ export class Exporter {
   constructor(private readonly cfg: ExporterConfig, private readonly deps: ExporterDeps,
     private readonly onStop: (r: StopReason, untilMs?: number) => void) {}
 
+  /** The encoded resource attributes, known once the SDK starts. */
+  setResource(resource: string): void {
+    this.cfg.resource = resource
+  }
+
   url(signal: Signal, gzip: boolean): string {
     const q = `ct=${this.cfg.token}${gzip ? "&enc=gzip" : ""}&sv=${encodeURIComponent(this.cfg.sdkVersion)}`
     if (this.cfg.tunnel) return `${this.cfg.tunnel}${this.cfg.tunnel.includes("?") ? "&" : "?"}path=/v1/${signal}&${q}`

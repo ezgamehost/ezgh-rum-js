@@ -30,6 +30,11 @@ export default defineConfig(
     },
   },
   {
+    // Patches keep the original methods and call them with .call/.apply on the right receiver.
+    files: ["packages/rum/src/instrument/**"],
+    rules: { "@typescript-eslint/unbound-method": "off" },
+  },
+  {
     files: ["packages/rum/src/**"],
     rules: {
       "no-restricted-syntax": ["error", {
