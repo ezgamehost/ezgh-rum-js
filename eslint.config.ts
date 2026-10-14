@@ -20,6 +20,16 @@ export default defineConfig(
     },
   },
   {
+    // Tests read decoded JSON bodies as `any` on purpose.
+    files: ["packages/*/test/**", "e2e/**", "examples/tunnel/*.test.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+    },
+  },
+  {
     files: ["packages/rum/src/**"],
     rules: {
       "no-restricted-syntax": ["error", {
