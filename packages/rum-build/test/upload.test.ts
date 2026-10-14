@@ -99,8 +99,8 @@ describe("upload", () => {
   })
 
   test("401 and 403 name the policy", async () => {
-    expect(await rejection(upload(target({ authorization: "Bearer denied" }), pair()))).toContain("the key can't upload source maps: give its owner the ObsSourceMapUpload policy")
-    expect(await rejection(upload(target({ authorization: "Basic x" }), pair()))).toContain("ObsSourceMapUpload policy")
+    expect(await rejection(upload(target({ authorization: "Bearer denied" }), pair()))).toContain("the key can't upload source maps: give its owner the ObsSourceMapUploadAccess policy")
+    expect(await rejection(upload(target({ authorization: "Basic x" }), pair()))).toContain("ObsSourceMapUploadAccess policy")
   })
 
   test("no request goes anywhere but obs-api, and no body or log line carries another URL", async () => {

@@ -1,0 +1,38 @@
+import { test, expect, waitFor, captured, spans } from "./intake.ts"
+
+test("no DOM text, input values, secrets or fragments; redacted query parameters", async ({ page, ct }) => {
+  await page.goto(`/?ct=${ct}#frag-ment`)
+  await page.getByRole("textbox").click()
+  await page.getByRole("button", { name: "SECRET-BUTTON-TEXT" }).click()
+  await page.getByRole("button", { name: "Fetch", exact: true }).click()
+  await page.getByRole("button", { name: "Throw", exact: true }).click()
+  const caps = await waitFor(ct, c => spans(c).some(s => s.name === "HTTP GET"), page)
+  const text = caps.map(c => c.raw).join("\n")
+  expect(text).not.toContain("SECRET-INPUT")
+  expect(text).not.toContain("SECRET-BUTTON-TEXT")
+  expect(text).not.toContain("s3cret")
+  expect(text).toContain("token=REDACTED")
+  expect(text).toContain("coupon=REDACTED")
+  expect(text).not.toContain("frag-ment")
+})
+
+test("pending consent sends and stores nothing until granted; revoke clears and stops", async ({ page, ct }) => {
+  await page.goto(`/?ct=${ct}&consent=pending`)
+  await page.getByRole("button", { name: "Fetch", exact: true }).click()
+  await page.waitForTimeout(1500)
+  expect(await captured(ct)).toHaveLength(0)
+  expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).toBeNull()
+  await page.getByRole("button", { name: "Grant consent" }).click()
+  await page.getByRole("button", { name: "Fetch", exact: true }).click()
+  await waitFor(ct, c => c.length > 0, page)
+  expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).not.toBeNull()
+  await page.evaluate(() => window.__rum!.revoke())
+  expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).toBeNull()
+  const n = (await captured(ct)).length
+  await page.getByRole("button", { name: "Fetch", exact: true }).click()
+  await page.getByRole("button", { name: "Throw", exact: true }).click()
+  await page.evaluate(() => window.__rum!.flush())
+  await page.waitForTimeout(1000)
+  expect(await captured(ct)).toHaveLength(n)
+  expect(await page.evaluate(() => localStorage.getItem("ezgh_rum_s"))).toBeNull()
+})

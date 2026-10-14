@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://obs.ezghcloud.com/schemas/otlp-rum.schema.json",
+  "title": "EZGH browser RUM OTLP/JSON request (rum.md, \"Data model\")",
+  "description": "One request body the @ezgh/rum SDK sends to obs-browser.ezghcloud.com: an OTLP/JSON traces or logs export (browsers send no metrics; obs generates them). ezgh-rum-js/fixtures/otlp-rum.schema.json and obs-stack testdata/rum/payloads/schema.json are the same file.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["resourceSpans"],
+      "properties": {
+        "resourceSpans": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["resource", "scopeSpans"],
+            "properties": {
+              "resource": {"$ref": "#/$defs/resource"},
+              "scopeSpans": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["spans"],
+                  "properties": {"spans": {"type": "array", "items": {"$ref": "#/$defs/span"}}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": ["resourceLogs"],
+      "properties": {
+        "resourceLogs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["resource", "scopeLogs"],
+            "properties": {
+              "resource": {"$ref": "#/$defs/resource"},
+              "scopeLogs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["logRecords"],
+                  "properties": {"logRecords": {"type": "array", "items": {"$ref": "#/$defs/logRecord"}}}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "noIngestOwnedKeys": {
+      "$comment": "Ingest writes geo.* and pins application and environment: the SDK never sends them.",
+      "not": {
+        "contains": {
+          "type": "object",
+          "properties": {"key": {"pattern": "^(geo\\.|ezgh\\.rum\\.geo\\.|ezgh\\.metadata\\.)"}},
+          "required": ["key"]
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": ["attributes"],
+      "properties": {
+        "attributes": {
+          "type": "array",
+          "allOf": [
+            {"$ref": "#/$defs/noIngestOwnedKeys"},
+            {
+              "contains": {
+                "properties": {
+                  "key": {"const": "telemetry.sdk.name"},
+                  "value": {"properties": {"stringValue": {"const": "ezgh-rum"}}, "required": ["stringValue"]}
+                },
+                "required": ["key", "value"]
+              }
+            },
+            {"contains": {"properties": {"key": {"const": "telemetry.sdk.version"}}, "required": ["key"]}},
+            {"contains": {"properties": {"key": {"const": "service.version"}}, "required": ["key"]}},
+            {"contains": {"properties": {"key": {"const": "browser.name"}}, "required": ["key"]}},
+            {
+              "contains": {
+                "properties": {
+                  "key": {"const": "device.type"},
+                  "value": {
+                    "properties": {"stringValue": {"enum": ["desktop", "mobile", "tablet"]}},
+                    "required": ["stringValue"]
+                  }
+                },
+                "required": ["key", "value"]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "recordContext": {
+      "$comment": "Every span and log record carries the session and view (rum.md, \"Record attributes\").",
+      "type": "array",
+      "allOf": [
+        {"$ref": "#/$defs/noIngestOwnedKeys"},
+        {
+          "contains": {
+            "properties": {
+              "key": {"const": "session.id"},
+              "value": {"properties": {"stringValue": {"pattern": "^[0-9a-f]{32}$"}}, "required": ["stringValue"]}
+            },
+            "required": ["key", "value"]
+          }
+        },
+        {"contains": {"properties": {"key": {"const": "ezgh.rum.view.id"}}, "required": ["key"]}},
+        {
+          "contains": {
+            "properties": {
+              "key": {"const": "ezgh.rum.view.name"},
+              "value": {"properties": {"stringValue": {"maxLength": 128}}, "required": ["stringValue"]}
+            },
+            "required": ["key", "value"]
+          }
+        }
+      ]
+    },
+    "span": {
+      "type": "object",
+      "required": ["traceId", "spanId", "name", "startTimeUnixNano", "endTimeUnixNano", "attributes"],
+      "properties": {
+        "traceId": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+        "spanId": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "parentSpanId": {"type": "string", "pattern": "^([0-9a-f]{16})?$"},
+        "name": {
+          "type": "string",
+          "pattern": "^(documentLoad|routeChange|interaction|dns|connect|tls|request|response|domProcessing|resource|longTask|HTTP [A-Z]+)$"
+        },
+        "attributes": {"$ref": "#/$defs/recordContext"}
+      }
+    },
+    "logRecord": {
+      "type": "object",
+      "required": ["timeUnixNano", "severityNumber", "attributes"],
+      "properties": {"attributes": {"$ref": "#/$defs/recordContext"}},
+      "oneOf": [
+        {
+          "$comment": "A view event: event.name as a record attribute and its update number (0 first, then 1, 2, … after resumes).",
+          "properties": {
+            "severityNumber": {"const": 9},
+            "attributes": {
+              "allOf": [
+                {
+                  "contains": {
+                    "properties": {
+                      "key": {"const": "event.name"},
+                      "value": {"properties": {"stringValue": {"const": "ezgh.rum.view"}}, "required": ["stringValue"]}
+                    },
+                    "required": ["key", "value"]
+                  }
+                },
+                {
+                  "contains": {
+                    "properties": {
+                      "key": {"const": "ezgh.rum.view.update"},
+                      "value": {
+                        "properties": {"intValue": {"type": "string", "pattern": "^[0-9]+$"}},
+                        "required": ["intValue"]
+                      }
+                    },
+                    "required": ["key", "value"]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$comment": "An exception: ERROR with exception.type, exception.message and ezgh.rum.error.source.",
+          "properties": {
+            "severityNumber": {"const": 17},
+            "attributes": {
+              "allOf": [
+                {"contains": {"properties": {"key": {"const": "exception.type"}}, "required": ["key"]}},
+                {"contains": {"properties": {"key": {"const": "exception.message"}}, "required": ["key"]}},
+                {
+                  "contains": {
+                    "properties": {
+                      "key": {"const": "ezgh.rum.error.source"},
+                      "value": {
+                        "properties": {
+                          "stringValue": {"enum": ["uncaught", "unhandledrejection", "boundary", "manual"]}
+                        },
+                        "required": ["stringValue"]
+                      }
+                    },
+                    "required": ["key", "value"]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

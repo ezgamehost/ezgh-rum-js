@@ -75,7 +75,7 @@ export function fakeObsApi() {
         if ("sha256" in f) return err(400, "invalid_request", "files have no sha256 field")
         if (f.chunks.length !== Math.max(1, Math.ceil(f.size / MAX_CHUNK))) return err(400, "invalid_request", "chunk layout")
         const prev = registered.get(`${f.debugId}:${f.kind}`)
-        if (prev && prev !== JSON.stringify([f.size, f.chunks])) return err(409, "debug_id_conflict", "A debug ID is registered with other content", { debugIds: [f.debugId] })
+        if (prev && prev !== JSON.stringify([f.size, f.chunks])) return err(409, "debug_id_conflict", "A debug ID is registered with other content", { details: { debugIds: [f.debugId] } })
       }
       if (storageFull) return err(409, "storage_limit_exceeded", "The project's source-map storage is full")
       for (const f of c.files) registered.set(`${f.debugId}:${f.kind}`, JSON.stringify([f.size, f.chunks]))

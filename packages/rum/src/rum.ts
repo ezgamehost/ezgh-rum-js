@@ -34,6 +34,7 @@ import { clsOf, inpOf, type Shift } from "./vitals.ts"
 const FLUSH_EVERY_MS = 10_000
 const FLUSH_AT_RECORDS = 50
 const HIDE_DEBOUNCE_MS = 100
+const FRAMEWORK_KEY = /^ezgh\.rum\.(react|nextjs|vue|angular)\.[a-z_]+$/
 
 function localStorageKV(): KV | undefined {
   try {
@@ -68,6 +69,7 @@ export class Rum {
   private timer: ReturnType<typeof setInterval> | undefined
   private lastHide = -Infinity
   private hiddenEmitted = false
+  private lcpObserver: PerformanceObserver | undefined
   private shiftObserver: PerformanceObserver | undefined
   private eventObserver: PerformanceObserver | undefined
 
@@ -129,6 +131,7 @@ export class Rum {
     if (this.timer !== undefined) clearInterval(this.timer)
     this.timer = undefined
     try {
+      this.lcpObserver?.disconnect()
       this.shiftObserver?.disconnect()
       this.eventObserver?.disconnect()
     }
@@ -187,6 +190,12 @@ export class Rum {
     onFCP(setLoad("fcp"))
     onTTFB(setLoad("ttfb"))
     const supported = typeof PerformanceObserver !== "undefined" ? PerformanceObserver.supportedEntryTypes ?? [] : []
+    // web-vitals reports LCP from an observer callback, which a busy page may not have run yet when
+    // the view's update 0 is emitted; takeRecords() on this one catches up (refreshVitals).
+    if (supported.includes("largest-contentful-paint")) {
+      this.lcpObserver = new PerformanceObserver(this.guard.wrap((list: PerformanceObserverEntryList) => this.takeLcp(list.getEntries())))
+      this.lcpObserver.observe({ type: "largest-contentful-paint", buffered: true })
+    }
     if (supported.includes("layout-shift")) {
       this.shiftObserver = new PerformanceObserver(this.guard.wrap((list: PerformanceObserverEntryList) => this.takeShifts(list.getEntries())))
       this.shiftObserver.observe({ type: "layout-shift", buffered: true })
@@ -195,6 +204,14 @@ export class Rum {
       this.eventObserver = new PerformanceObserver(this.guard.wrap((list: PerformanceObserverEntryList) => this.takeEvents(list.getEntries())))
       this.eventObserver.observe({ type: "event", buffered: true, durationThreshold: 40 })
     }
+  }
+
+  private takeLcp(entries: readonly PerformanceEntry[]): void {
+    const v = this.views.current
+    const last = entries[entries.length - 1]
+    if (!v || !last || v.id !== this.loadViewId) return
+    const nav = performance.getEntriesByType("navigation")[0] as (PerformanceEntry & { activationStart?: number }) | undefined
+    v.vitals.lcp = Math.round(Math.max(last.startTime - (nav?.activationStart ?? 0), 0))
   }
 
   private takeShifts(entries: readonly PerformanceEntry[]): void {
@@ -218,6 +235,7 @@ export class Rum {
 
   private refreshVitals(v: View): void {
     if (v !== this.views.current) return
+    if (this.lcpObserver) this.takeLcp(this.lcpObserver.takeRecords())
     if (this.shiftObserver) {
       this.takeShifts(this.shiftObserver.takeRecords())
       v.vitals.cls = clsOf(v.shifts)
@@ -310,6 +328,10 @@ export class Rum {
     const { send, suppressed } = this.throttle.admit(`${type}\0${message}\0${topFrame(stack)}`, Date.now())
     if (!send) return
     const attrs: Attrs = o.attrs ? filterAttrs(o.attrs).kept : {}
+    // The framework packages' own attributes (ezgh.rum.react.component_stack, ezgh.rum.vue.info, …).
+    if (source === "boundary" && o.attrs) {
+      for (const [k, v] of Object.entries(o.attrs)) if (FRAMEWORK_KEY.test(k) && typeof v === "string") attrs[k] = v.slice(0, 4096)
+    }
     Object.assign(attrs, { "event.name": "exception", "exception.type": type, "exception.message": message,
       "exception.stacktrace": stack, "ezgh.rum.error.source": source })
     const ids = debugIdsFor(stack, (globalThis as { _ezghDebugIds?: Record<string, string> })._ezghDebugIds)

@@ -21,7 +21,8 @@ export interface UploadTarget {
   fetch?: typeof fetch
   log?: (m: string) => void
 }
-interface ErrorBody { code?: string, message?: string, details?: { missing?: string[] }, missing?: string[], debugIds?: string[] }
+// obs-api errors: {"error":{"code","message","details":{…}}} (chunks_missing: details.missing; debug_id_conflict: details.debugIds).
+interface ErrorBody { code?: string, message?: string, details?: { missing?: string[], debugIds?: string[] } }
 export class UploadError extends Error {
   override name = "UploadError"
   constructor(message: string, readonly status: number, readonly code: string, readonly body: ErrorBody) {
@@ -99,7 +100,7 @@ export async function upload(t: UploadTarget, files: readonly UploadFile[]): Pro
       await call("", json(body, { "Idempotency-Key": randomUUID() }))
     }
     catch (e) {
-      const missing = e instanceof UploadError && e.status === 409 && e.code === "chunks_missing" ? e.body.details?.missing ?? e.body.missing : undefined
+      const missing = e instanceof UploadError && e.status === 409 && e.code === "chunks_missing" ? e.body.details?.missing : undefined
       if (!missing) throw e
       // A chunk went away between chunks/missing and the commit: upload it, then commit once more.
       uploaded += await putChunks(missing)
@@ -114,9 +115,9 @@ export async function upload(t: UploadTarget, files: readonly UploadFile[]): Pro
 function explain(status: number, e: ErrorBody, statusText: string): string {
   const code = e.code ?? ""
   const message = e.message ?? statusText
-  if (status === 401 || status === 403) return "the key can't upload source maps: give its owner the ObsSourceMapUpload policy"
+  if (status === 401 || status === 403) return "the key can't upload source maps: give its owner the ObsSourceMapUploadAccess policy"
   if (code === "debug_id_conflict") {
-    const ids = e.debugIds?.length ? e.debugIds.join(", ") : message
+    const ids = e.details?.debugIds?.length ? e.details.debugIds.join(", ") : message
     return `debug ID ${ids} is already registered with different content: rebuild, then upload`
   }
   if (code === "storage_limit_exceeded") return "the project's 10 GiB source-map storage is full: delete old releases (ezgh obs sourcemaps delete)"
