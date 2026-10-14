@@ -4,9 +4,19 @@ import { dirname, resolve } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import { processOutput, type EzghRumBuildOptions } from "./process.ts"
 
-interface RspackCompiler {
+interface CompilerLike {
   hooks: { afterEmit: { tapPromise(name: string, fn: () => Promise<void>): void } }
-  options: { output: { path?: string } }
+  options: { output: { path?: string }, target?: unknown, devtool?: unknown }
+  watchMode?: boolean
+}
+
+// Browser output only, written to disk by a production build: server targets, dev servers and
+// watch mode (often an in-memory file system) are left alone.
+function browserBuild(c: CompilerLike, needDevtool: boolean): boolean {
+  if (c.watchMode || (needDevtool && !c.options.devtool)) return false
+  const t = c.options.target
+  const targets = (Array.isArray(t) ? t : [t]).filter((x): x is string => typeof x === "string")
+  return !targets.some(x => /^(?:async-)?node|^electron-(?:main|preload)/.test(x))
 }
 
 export const ezghRumBuild: UnpluginInstance<EzghRumBuildOptions | undefined> = createUnplugin((o: EzghRumBuildOptions | undefined = {}) => {
@@ -20,8 +30,8 @@ export const ezghRumBuild: UnpluginInstance<EzghRumBuildOptions | undefined> = c
         viteSsr = Boolean(c.build.ssr)
       },
       async writeBundle(out) {
-        const env = (this as { environment?: { name: string } }).environment
-        if (viteSsr || (env && env.name !== "client")) return
+        const env = (this as { environment?: { config?: { consumer?: string } } }).environment
+        if (viteSsr || (env?.config?.consumer !== undefined && env.config.consumer !== "client")) return
         await processOutput(out.dir ?? viteOut!, o)
       },
     },
@@ -31,15 +41,17 @@ export const ezghRumBuild: UnpluginInstance<EzghRumBuildOptions | undefined> = c
       },
     },
     webpack(compiler) {
-      compiler.hooks.afterEmit.tapPromise("ezgh-rum-build", async () => {
-        if (compiler.options.target === "node" || !compiler.options.devtool) return
-        await processOutput(compiler.options.output.path!, o)
+      const c = compiler as unknown as CompilerLike
+      c.hooks.afterEmit.tapPromise("ezgh-rum-build", async () => {
+        if (!browserBuild(c, true)) return
+        await processOutput(c.options.output.path!, o)
       })
     },
     rspack(compiler) {
       // Typed structurally: @rspack/core is the customer's, not a dependency of this package.
-      const c = compiler as unknown as RspackCompiler
+      const c = compiler as unknown as CompilerLike
       c.hooks.afterEmit.tapPromise("ezgh-rum-build", async () => {
+        if (!browserBuild(c, true)) return
         await processOutput(c.options.output.path!, o)
       })
     },

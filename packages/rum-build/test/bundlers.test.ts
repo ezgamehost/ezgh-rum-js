@@ -3,7 +3,7 @@
 // debugId, and the fake receives one commit with a js and a map for every ID. Rspack isn't a dev
 // dependency, so it isn't built here.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test"
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { cpSync, existsSync, mkdirSync, mkdtempSync, symlinkSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ezghRumBuild, processOutput, type EzghRumBuildOptions } from "../src/index.ts"
@@ -111,12 +111,32 @@ describe("processOutput", () => {
     logs.length = 0
     expect(await processOutput(d, options({ apiKey: undefined, organizationId: undefined }))).toEqual({ injected: 1, uploaded: 0 })
     expect(logs.some(l => l.includes("debug IDs injected into 1 files; not uploading: set EZGH_API_KEY (or oidc), organizationId"))).toBe(true)
-    expect(logs.some(l => l.includes("inline (data:) source maps"))).toBe(true)
+    expect(logs.some(l => l.includes("inline.js: its source map is inline (a data: URL)"))).toBe(true)
     expect(logs.some(l => l.includes("1 JS file(s) without a source map"))).toBe(true)
     // An already-injected build (the CLI did it) still uploads every pair.
     expect(await processOutput(d, options({ pathPrefix: "_next/static/", deleteMapsAfterUpload: true }))).toEqual({ injected: 0, uploaded: 2 })
     expect(api.commits[0]!.files.map(f => f.path).sort()).toEqual(["_next/static/a.js", "_next/static/a.js.map"])
     expect(existsSync(join(d, "a.js.map"))).toBe(false)
+  })
+
+  test("pairs as ezgh-cli's Find does: shared maps, outside or symlinked maps and absolute URLs are skipped", async () => {
+    const d = mkdtempSync(join(work, "p-"))
+    mkdirSync(join(d, "sub"))
+    writeOut(d, {
+      "one.js": "1\n//# sourceMappingURL=shared.map\n", "two.js": "2\n//# sourceMappingURL=shared.map\n", "shared.map": MAP("x"),
+      "abs.js": "3\n//# sourceMappingURL=/abs.js.map\n", "abs.js.map": MAP("abs.js"),
+      "up.js": "4\n//# sourceMappingURL=../up.js.map\n",
+      "fallback.js": "5\n", "fallback.js.map": MAP("fallback.js"),
+      "sub/rel.js": "6\n//# sourceMappingURL=../maps%20dir.map?v=1\n", "maps dir.map": MAP("rel.js"),
+    })
+    symlinkSync(join(d, "fallback.js.map"), join(d, "linked.js.map"))
+    writeOut(d, { "linked.js": "7\n//# sourceMappingURL=linked.js.map\n" })
+    logs.length = 0
+    await processOutput(d, options({ upload: false }))
+    const injected = ["fallback.js", "sub/rel.js"]
+    for (const f of ["one.js", "two.js", "abs.js", "up.js", "linked.js"]) expect(readFileSync(join(d, f), "utf8")).not.toContain("debugId")
+    for (const f of injected) expect(readFileSync(join(d, f), "utf8")).toContain("//# debugId=")
+    expect(logs.some(l => l.includes("one.js: its source map shared.map is also two.js's"))).toBe(true)
   })
 
   test("only the pairs injected in this run upload when there are any; injection errors fail the build unless failOnError is false", async () => {

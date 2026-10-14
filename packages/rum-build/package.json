@@ -29,7 +29,7 @@
     "provenance": true
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   },
   "dependencies": {
     "unplugin": "catalog:"
