@@ -4,7 +4,7 @@ export interface OidcOptions { bot: string, audience?: string }
 
 export async function resolveAuthorization(
   o: { apiKey?: string, oidc?: OidcOptions, organizationId: string, domain: string, fetch?: typeof fetch },
-  env: NodeJS.ProcessEnv,
+  env: Readonly<Record<string, string | undefined>>,
 ): Promise<string | undefined> {
   const key = o.apiKey || env.EZGH_API_KEY
   if (key) return `Bearer ${key}`

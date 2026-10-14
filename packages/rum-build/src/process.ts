@@ -33,6 +33,11 @@ export interface EzghRumBuildOptions {
   include?: (relPath: string) => boolean
   /** Prefixed to committed paths (withEzghRum: "_next/static/"). */
   pathPrefix?: string
+  /**
+   * @internal withEzghRum: delete every .map file of the processed pairs, uploaded or not (it turned
+   * productionBrowserSourceMaps on, so maps must never be left to be served).
+   */
+  deleteMapsAlways?: boolean
   /** @internal For tests: the fetch used for obs-api and org-api. */
   fetch?: typeof fetch
   /** @internal For tests: where log lines go (default console.log). */
@@ -55,6 +60,7 @@ async function run(dir: string, o: EzghRumBuildOptions, log: (m: string) => void
   const env = process.env
   const pairs = await findPairs(dir, o.include, log)
   const fresh: UploadFile[] = [], all: UploadFile[] = []
+  const prefix = o.pathPrefix ?? ""
   let injected = 0
   for (const p of pairs) {
     const jsPath = join(dir, p.js), mapPath = join(dir, p.map)
@@ -72,7 +78,6 @@ async function run(dir: string, o: EzghRumBuildOptions, log: (m: string) => void
       if (!out.map.equals(map)) await writeFile(mapPath, out.map)
       injected++
     }
-    const prefix = o.pathPrefix ?? ""
     const files: UploadFile[] = [
       { debugId: out.debugId, path: prefix + p.js, kind: "js", bytes: out.code },
       { debugId: out.debugId, path: prefix + p.map, kind: "map", bytes: out.map },
@@ -83,8 +88,11 @@ async function run(dir: string, o: EzghRumBuildOptions, log: (m: string) => void
   // The pairs injected in this run, or, when none were (a CLI-injected build), every pair with a
   // debug ID: leftovers of an older build in a non-emptied outDir aren't committed in this release.
   const set = fresh.length > 0 ? fresh : all
+  const deleteMaps = (files: readonly UploadFile[]) =>
+    Promise.all(files.filter(f => f.kind === "map").map(f => unlink(join(dir, f.path.slice(prefix.length))).catch(() => undefined)))
   if (o.upload === false || set.length === 0) {
     if (injected > 0) log(`ezgh-rum: debug IDs injected into ${injected} files`)
+    if (o.deleteMapsAlways) await deleteMaps(all)
     return { injected, uploaded: 0 }
   }
   const application = o.application ?? env.EZGH_RUM_APPLICATION
@@ -101,14 +109,14 @@ async function run(dir: string, o: EzghRumBuildOptions, log: (m: string) => void
   ].filter(Boolean)
   if (unset.length > 0) {
     log(`ezgh-rum: debug IDs injected into ${injected} files; not uploading: set ${unset.join(", ")}`)
+    if (o.deleteMapsAlways) await deleteMaps(all)
     return { injected, uploaded: 0 }
   }
   const r = await upload({
     apiUrl: `https://obs.${domain}`, organizationId: organizationId!, projectId: projectId!, application: application!,
     release: release!, authorization: authorization!, fetch: o.fetch, log,
   }, set)
-  if (o.deleteMapsAfterUpload) {
-    await Promise.all(set.filter(f => f.kind === "map").map(f => unlink(join(dir, f.path.slice((o.pathPrefix ?? "").length))).catch(() => undefined)))
-  }
+  if (o.deleteMapsAlways) await deleteMaps(all)
+  else if (o.deleteMapsAfterUpload) await deleteMaps(set)
   return { injected, uploaded: r.files }
 }

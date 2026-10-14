@@ -3,7 +3,7 @@
 import { filterAttrs } from "./attributes.ts"
 import { resolveOptions, TOKEN_RE, type InitOptions } from "./options.ts"
 import type { AttrValue } from "./otlp.ts"
-import { templateFromParams } from "./route.ts"
+import { templateFromParams, templatePath } from "./route.ts"
 import { Rum } from "./rum.ts"
 
 export type { InitOptions, RumEvent } from "./options.ts"
@@ -124,4 +124,5 @@ export const _integration = {
     safe(r => r.captureError(err, "boundary", attrs ? { attrs } : {}))
   },
   templateFromParams,
+  templatePath,
 }

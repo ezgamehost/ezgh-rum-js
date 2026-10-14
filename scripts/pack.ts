@@ -52,9 +52,7 @@ for (const p of ORDER) {
   walk((JSON.parse(packed) as { exports?: unknown }).exports)
   const missing = targets.filter(t => t !== "./package.json" && !listed.has(t))
   if (missing.length > 0) {
-    const msg = `${tgz}: exports point at files that aren't packed: ${missing.join(", ")}`
-    if (!dryRun) throw new Error(msg)
-    console.warn(`warning: ${msg}`)
+    throw new Error(`${tgz}: exports point at files that aren't packed: ${missing.join(", ")}`)
   }
   const bad = /"(?:workspace|catalog):[^"]*"/.exec(packed)
   if (bad) throw new Error(`${tgz}: package.json still has ${bad[0]}`)
