@@ -1,1 +1,7 @@
-{ "name": "ezgh-rum-tunnel-examples", "private": true, "type": "module" }
+{
+  "name": "ezgh-rum-tunnel-examples",
+  "private": true,
+  "type": "module",
+  "dependencies": { "express": "catalog:" },
+  "devDependencies": { "@types/express": "catalog:" }
+}
