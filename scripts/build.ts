@@ -5,8 +5,10 @@ import { $ } from "bun"
 
 type Manifest = { version: string, dependencies?: Record<string, string>, peerDependencies?: Record<string, string> }
 type Entry = { src: string, target: "browser" | "node", banner?: string }
+// In dependency order: each package's tsc resolves the ones before it through their dist/*.d.ts.
 const PACKAGES: Record<string, Entry[]> = {
   "rum": [{ src: "src/index.ts", target: "browser" }],
+  "rum-build": [{ src: "src/index.ts", target: "node" }],
   "rum-react": [{ src: "src/index.ts", target: "browser" }],
   "rum-nextjs": [
     { src: "src/index.ts", target: "browser", banner: "\"use client\";" },
@@ -15,7 +17,6 @@ const PACKAGES: Record<string, Entry[]> = {
   ],
   "rum-vue": [{ src: "src/index.ts", target: "browser" }],
   "rum-angular": [{ src: "src/index.ts", target: "browser" }],
-  "rum-build": [{ src: "src/index.ts", target: "node" }],
 }
 
 for (const [name, entries] of Object.entries(PACKAGES)) {
