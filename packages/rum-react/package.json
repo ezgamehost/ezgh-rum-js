@@ -33,11 +33,6 @@
     "react": ">=18",
     "react-router": ">=7"
   },
-  "peerDependenciesMeta": {
-    "react-router": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@ezgh/rum": "workspace:*",
     "react": "catalog:",
