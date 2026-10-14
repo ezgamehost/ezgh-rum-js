@@ -56,6 +56,7 @@ export function fakeObsApi() {
         return json(200, { missing: hashes.filter(h => !chunks.has(h)) })
       }
       if (route === "chunks") {
+        if (!req.headers.get("idempotency-key")) return err(400, "invalid_request", "Idempotency-Key is required")
         if (body.byteLength > MAX_CHUNK) return err(413, "payload_too_large", "over 8 MiB")
         const h = createHash("sha256").update(body).digest("hex")
         if (h !== req.headers.get("x-ezgh-sha256")) return err(400, "invalid_request", "x-ezgh-sha256 doesn't match the body")

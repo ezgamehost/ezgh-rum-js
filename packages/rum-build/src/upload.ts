@@ -78,7 +78,7 @@ export async function upload(t: UploadTarget, files: readonly UploadFile[]): Pro
     const n = queue.length
     await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
       for (let h = queue.shift(); h; h = queue.shift()) {
-        await call("/chunks", { method: "POST", body: chunkBytes.get(h)! as Uint8Array<ArrayBuffer>, headers: { "Content-Type": "application/octet-stream", "x-ezgh-sha256": h } })
+        await call("/chunks", { method: "POST", body: chunkBytes.get(h)! as Uint8Array<ArrayBuffer>, headers: { "Content-Type": "application/octet-stream", "x-ezgh-sha256": h, "Idempotency-Key": randomUUID() } })
       }
     }))
     return n

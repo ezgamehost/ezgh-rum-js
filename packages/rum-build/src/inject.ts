@@ -174,6 +174,7 @@ export function injectDebugId(jsBytes: Buffer, mapBytes: Buffer): Injected {
   for (const x of [fromSnippet, fromComment]) if (x !== undefined && !UUID.test(x)) throw new InjectError(`has a debug ID that isn't a UUID (${x})`)
   const ids = [...new Set([fromSnippet, fromComment, fromMap].filter((x): x is string => x !== undefined))]
   if (ids.length > 1) throw new InjectError(`has two debug IDs (${ids[0]} and ${ids[1]}): rebuild it, then inject`)
+  if (fromMap && !fromSnippet && !fromComment) throw new InjectError("has a source map with a debug ID but a JS file without one (an inject that didn't finish?): rebuild it, then inject")
   if (fromSnippet && fromComment && fromMap) return { code: Buffer.from(jsBytes), map: Buffer.from(mapBytes), debugId: fromSnippet, already: true }
   const id = ids[0] ?? debugIdFor(jsBytes, mapBytes)
 

@@ -1,0 +1,1 @@
+has a source map with a debug ID but a JS file without one
