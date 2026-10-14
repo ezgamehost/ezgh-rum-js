@@ -9,6 +9,11 @@ import { processOutput, type EzghRumBuildOptions } from "@ezgh/rum-build"
 export type { EzghRumBuildOptions } from "@ezgh/rum-build"
 
 export function withEzghRum(config: NextConfig, options: EzghRumBuildOptions = {}): NextConfig {
+  return wrap(config, options, processOutput)
+}
+
+/** @internal The implementation, with processOutput passed in (tests). */
+export function wrap(config: NextConfig, options: EzghRumBuildOptions, process: typeof processOutput): NextConfig {
   const prev = config.compiler?.runAfterProductionCompile
   const meta = config.experimental?.clientTraceMetadata ?? []
   const ownMaps = config.productionBrowserSourceMaps !== true // we turn them on, so we never leave them served
@@ -20,7 +25,7 @@ export function withEzghRum(config: NextConfig, options: EzghRumBuildOptions = {
       ...config.compiler,
       async runAfterProductionCompile(m) {
         await prev?.(m)
-        await processOutput(resolve(m.projectDir, m.distDir, "static"), {
+        await process(resolve(m.projectDir, m.distDir, "static"), {
           pathPrefix: "_next/static/", deleteMapsAfterUpload: true, ...(ownMaps ? { deleteMapsAlways: true } : {}), ...options,
         })
       },

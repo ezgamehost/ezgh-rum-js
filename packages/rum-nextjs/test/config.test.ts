@@ -1,13 +1,14 @@
-import { expect, mock, test } from "bun:test"
+import { expect, test } from "bun:test"
+import type { processOutput } from "@ezgh/rum-build"
+import { wrap } from "../src/config.ts"
+import type { NextConfig } from "next"
 
 const calls: Array<[string, Record<string, unknown>]> = []
-void mock.module("@ezgh/rum-build", () => ({
-  processOutput: (dir: string, o: Record<string, unknown>) => {
-    calls.push([dir, o])
-    return Promise.resolve({ injected: 0, uploaded: 0 })
-  },
-}))
-const { withEzghRum } = await import("../src/config.ts")
+const spy = ((dir: string, o: Record<string, unknown>) => {
+  calls.push([dir, o])
+  return Promise.resolve({ injected: 0, uploaded: 0 })
+}) as typeof processOutput
+const withEzghRum = (c: NextConfig, o = {}) => wrap(c, o, spy)
 
 test("withEzghRum keeps the customer's config, adds trace metadata once, and chains the compile hook", async () => {
   const order: string[] = []
