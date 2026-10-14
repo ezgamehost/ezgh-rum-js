@@ -44,7 +44,10 @@ export async function ezghTraceparent(): Promise<void> {
           return api.trace.setSpanContext(ctx, state ? { ...sc, traceState: api.createTraceState(state) } : sc)
         },
       }
-      api.propagation.setGlobalPropagator(w3c)
+      api.propagation.setGlobalPropagator(w3c) // refused when another one is already registered
+    }
+    if (!api.propagation.fields().includes("traceparent")) {
+      warnOnce("ezghTraceparent: a propagator without traceparent is already registered: add W3C trace context to it so pages carry <meta name=\"traceparent\">")
     }
     const provider = api.trace.getTracerProvider() as { getDelegate?: () => object }
     const delegate = provider.getDelegate?.()
