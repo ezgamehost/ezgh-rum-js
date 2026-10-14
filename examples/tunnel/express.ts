@@ -33,5 +33,8 @@ export function ezghTunnel(upstream = process.env.EZGH_RUM_UPSTREAM ?? "https://
     if (err.status === 413) res.sendStatus(413)
     else next(err)
   })
+  r.all("/", (_req: Request, res: Response) => {
+    res.sendStatus(404) // only POST
+  })
   return r
 }

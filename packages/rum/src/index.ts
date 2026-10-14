@@ -86,14 +86,14 @@ export function startView(name: string): void {
 }
 
 export const consent = {
-  grant(): void {
+  grant: (): void => {
     try {
       const r = rum
       if (r && !r.started && !r.revoked) r.start()
     }
     catch { /* never throws */ }
   },
-  revoke(): void {
+  revoke: (): void => {
     try {
       rum?.revoke()
     }

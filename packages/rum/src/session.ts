@@ -17,6 +17,7 @@ function valid(v: unknown): v is SessionState {
 
 export class Sessions {
   private mem: SessionState | undefined // used only when storage is unavailable
+  private storageOk = true
   constructor(
     private readonly store: KV | undefined,
     private readonly sampleRate: number,
@@ -29,6 +30,7 @@ export class Sessions {
     if (s && now - s.last <= INACTIVITY_MS && now - s.start <= MAX_SESSION_MS) return s
     const rate = Math.min(100, Math.max(0, this.sampleRate))
     const fresh: SessionState = { id: newSessionId(), start: now, last: now, sampled: rate >= 100 || this.random() * 100 < rate }
+    if (s?.stoppedUntil && s.stoppedUntil > now) fresh.stoppedUntil = s.stoppedUntil // the daily budget outlives a session
     this.write(fresh)
     return fresh
   }
@@ -57,23 +59,37 @@ export class Sessions {
     catch { /* unavailable */ }
   }
 
+  // Storage is the truth while it works, so a session cleared in another tab (consent revoked) is
+  // gone here too. Memory is used only when storage can't be read or the last write failed.
   private read(): SessionState | undefined {
-    if (this.store) {
+    if (this.store && this.storageOk) {
+      let raw: string | null
       try {
-        const raw = this.store.getItem(SESSION_KEY)
-        const v: unknown = raw ? JSON.parse(raw) : undefined
-        if (valid(v)) return v
+        raw = this.store.getItem(SESSION_KEY)
       }
-      catch { /* storage denied or corrupt: fall through to memory */ }
+      catch {
+        return this.mem
+      }
+      try {
+        const v: unknown = raw ? JSON.parse(raw) : undefined
+        return valid(v) ? v : undefined
+      }
+      catch {
+        return undefined // corrupt: a new session
+      }
     }
     return this.mem
   }
 
   private write(s: SessionState): void {
     this.mem = s
+    if (!this.store) return
     try {
-      this.store?.setItem(SESSION_KEY, JSON.stringify(s))
+      this.store.setItem(SESSION_KEY, JSON.stringify(s))
+      this.storageOk = true
     }
-    catch { /* memory only */ }
+    catch {
+      this.storageOk = false
+    }
   }
 }

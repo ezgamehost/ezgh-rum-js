@@ -54,4 +54,17 @@ describe("Sessions", () => {
     s.clear()
     expect(kv.m.has(SESSION_KEY)).toBe(false)
   })
+  test("a session cleared in another tab isn't resurrected", () => {
+    const kv = memKV()
+    const a = new Sessions(kv, 100), b = new Sessions(kv, 100)
+    const first = a.touch(0)
+    b.clear()
+    expect(a.touch(2_000).id).not.toBe(first.id)
+  })
+  test("the daily-budget stop carries into a renewed session", () => {
+    const kv = memKV(), s = new Sessions(kv, 100)
+    s.touch(0)
+    s.stopUntil(0, 100 * MIN)
+    expect(s.current(31 * MIN).stoppedUntil).toBe(100 * MIN)
+  })
 })

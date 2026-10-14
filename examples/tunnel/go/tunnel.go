@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 )
 
 // DefaultUpstream is the browser ingest host.
@@ -55,12 +56,18 @@ func Handler(upstream string) http.Handler {
 		if o := r.Header.Get("Origin"); o != "" {
 			req.Header.Set("Origin", o)
 		}
-		if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-			xff := r.Header.Get("X-Forwarded-For")
-			if xff != "" {
-				xff += ", "
-			}
-			req.Header.Set("X-Forwarded-For", xff+host)
+		// The client's chain (every X-Forwarded-For line), then the browser's address. A trusted-proxy
+		// middleware may leave RemoteAddr as a bare IP, without a port.
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			host = r.RemoteAddr
+		}
+		chain := r.Header.Values("X-Forwarded-For")
+		if net.ParseIP(host) != nil {
+			chain = append(chain, host)
+		}
+		if len(chain) > 0 {
+			req.Header.Set("X-Forwarded-For", strings.Join(chain, ", "))
 		}
 		resp, err := client.Do(req)
 		if err != nil {

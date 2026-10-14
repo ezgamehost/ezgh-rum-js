@@ -43,6 +43,19 @@ for (const p of ORDER) {
   const tgz = `.packs/${pkg.name.replace("@", "").replace("/", "-")}-${pkg.version}.tgz`
   if (!existsSync(tgz)) throw new Error(`${tgz} wasn't written`)
   const packed = await $`tar -xzOf ${tgz} package/package.json`.text()
+  const listed = new Set((await $`tar -tzf ${tgz}`.text()).split("\n").map(l => l.replace(/^package\//, "./")))
+  const targets: string[] = []
+  const walk = (v: unknown): void => {
+    if (typeof v === "string") targets.push(v)
+    else if (v && typeof v === "object") Object.values(v).forEach(walk)
+  }
+  walk((JSON.parse(packed) as { exports?: unknown }).exports)
+  const missing = targets.filter(t => t !== "./package.json" && !listed.has(t))
+  if (missing.length > 0) {
+    const msg = `${tgz}: exports point at files that aren't packed: ${missing.join(", ")}`
+    if (!dryRun) throw new Error(msg)
+    console.warn(`warning: ${msg}`)
+  }
   const bad = /"(?:workspace|catalog):[^"]*"/.exec(packed)
   if (bad) throw new Error(`${tgz}: package.json still has ${bad[0]}`)
   notes.push(`- \`${pkg.name}@${pkg.version}\``)

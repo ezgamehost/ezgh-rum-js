@@ -138,3 +138,19 @@ func TestUpstream429KeepsRetryAfter(t *testing.T) {
 		t.Errorf("status %d, Retry-After %q", w.Code, w.Header().Get("Retry-After"))
 	}
 }
+
+func TestBareRemoteAddrAndSplitChain(t *testing.T) {
+	var got string
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get("X-Forwarded-For")
+	}))
+	defer up.Close()
+	req := httptest.NewRequest(http.MethodPost, "/_ezgh?path=/v1/logs&ct=x", strings.NewReader("{}"))
+	req.RemoteAddr = "198.51.100.7"
+	req.Header.Add("X-Forwarded-For", "203.0.113.9")
+	req.Header.Add("X-Forwarded-For", "192.0.2.1")
+	Handler(up.URL).ServeHTTP(httptest.NewRecorder(), req)
+	if got != "203.0.113.9, 192.0.2.1, 198.51.100.7" {
+		t.Fatalf("X-Forwarded-For = %q", got)
+	}
+}

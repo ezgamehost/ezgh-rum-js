@@ -144,4 +144,54 @@ describe("Exporter", () => {
     expect(d.calls[0]!.init).toMatchObject({ keepalive: true, credentials: "omit" })
     expect(typeof d.calls[0]!.init.body).toBe("string")
   })
+  test("a hidden flush claims the chunk a periodic flush is still compressing", async () => {
+    const beacons: string[] = []
+    let release: () => void = () => undefined
+    const d = fake([200])
+    const e = new Exporter(CFG, {
+      ...d, sendBeacon: (u) => {
+        beacons.push(u)
+        return true
+      },
+      compress: s => new Promise((resolve) => {
+        release = () => resolve(Bun.gzipSync(new TextEncoder().encode(s)))
+      }),
+    }, () => undefined)
+    e.enqueue(item("logs", "{}"))
+    const p = e.flush()
+    e.flushHidden()
+    release()
+    await p
+    expect(beacons).toHaveLength(1)
+    expect(d.calls).toHaveLength(0)
+  })
+  test("a hidden flush keeps what's over the keepalive budget and records over 60 KB", () => {
+    const beacons: string[] = []
+    const e = new Exporter(CFG, { ...fake([]), sendBeacon: (u) => {
+      beacons.push(u)
+      return true
+    } }, () => undefined)
+    for (let i = 0; i < 3; i++) e.enqueue(item("logs", JSON.stringify({ r: "x".repeat(30_000) })))
+    e.enqueue(item("traces", JSON.stringify({ r: "y".repeat(70_000) })))
+    e.flushHidden()
+    expect(beacons).toHaveLength(2) // one 30 KB record per chunk; a third would pass the 64 KB budget
+    expect(e.queue.count).toBe(2)
+  })
+  test("server errors don't count toward the unreachable stop; flush waits for an in-flight send", async () => {
+    let reason = ""
+    const d = fake([503, 503, 503, 503, "network", 200])
+    const e = new Exporter(CFG, d, (r) => {
+      reason = r
+    })
+    e.enqueue(item("logs", "{}"))
+    for (let i = 0; i < 5; i++) {
+      await e.flush()
+      d.t += 600_000
+    }
+    expect(reason).toBe("")
+    const first = e.flush()
+    expect(e.flush()).toBe(first)
+    await first
+    expect(e.queue.count).toBe(0)
+  })
 })

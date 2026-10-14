@@ -1,11 +1,12 @@
 // The exporter: gzip where CompressionStream exists, requests under 60 KB on the wire (the
 // keepalive/sendBeacon quota), and the stop rules of spec "Safety" and plan 25 corrections 2 and 12.
-import { chunkItems, type Chunk, type Item } from "./chunk.ts"
+import { chunkItems, utf8Length, type Chunk, type Item } from "./chunk.ts"
 import { envelope, type Signal } from "./otlp.ts"
 import { RecordQueue } from "./queue.ts"
 
 export const WIRE_MAX = 60_000
 export const RAW_MAX_GZIP = 240_000
+export const KEEPALIVE_BUDGET = 64_000 // shared by in-flight beacons and keepalive fetches
 const MAX_DEAD_FAILURES = 5
 const TEXT = "text/plain;charset=UTF-8"
 
@@ -51,9 +52,14 @@ export class Exporter {
   readonly queue = new RecordQueue()
   stopped: StopReason | undefined
   private pausedUntil = 0
-  private failures = 0
+  private failures = 0 // for the backoff: network errors, 408, 429 and 5xx
+  private networkFailures = 0 // consecutive requests with no HTTP response at all
   private delivered = false
   private inFlight: Promise<void> | undefined
+  private keepaliveBytes = 0
+  // The chunk a periodic flush is compressing: a hidden flush claims it, since the page may unload
+  // before the compression promise resumes.
+  private compressing: { items: Item[], claimed: boolean } | undefined
 
   constructor(private readonly cfg: ExporterConfig, private readonly deps: ExporterDeps,
     private readonly onStop: (r: StopReason, untilMs?: number) => void) {}
@@ -71,73 +77,119 @@ export class Exporter {
 
   /** `url` is absolute; cfg.tunnel was resolved against location.href by the caller. */
   isOwnUrl(url: string): boolean {
-    return url.startsWith(this.cfg.tunnel?.split("?")[0] ?? `${this.cfg.endpoint.replace(/\/+$/, "")}/v1/`)
+    if (this.cfg.tunnel) {
+      const base = this.cfg.tunnel.split("?")[0]!
+      return url === base || url.startsWith(base + "?") || url.startsWith(base + "#")
+    }
+    return url.startsWith(`${this.cfg.endpoint.replace(/\/+$/, "")}/v1/`)
   }
 
   enqueue(i: Item): void {
     if (!this.stopped) this.queue.push(i)
   }
 
-  /** Single-flight; gzip; sequential keepalive fetches. */
+  /** Single-flight; gzip; sequential fetches. Resolves when the queue is sent (or kept for later). */
   flush(): Promise<void> {
+    if (this.inFlight) return this.inFlight
     if (this.stopped || this.deps.now() < this.pausedUntil || this.queue.count === 0) return Promise.resolve()
-    return (this.inFlight ??= this.sendAll().finally(() => {
+    const p = this.sendAll().catch(() => undefined).finally(() => {
       this.inFlight = undefined
-    }))
+    })
+    this.inFlight = p
+    return p
   }
 
-  /** Synchronous, for a page being hidden: raw JSON through sendBeacon, then keepalive fetch. */
+  /**
+   * Synchronous, for a page being hidden: raw JSON through sendBeacon, then keepalive fetch. Browsers
+   * share one 64 KiB budget across in-flight beacons and keepalive fetches, so what doesn't fit stays
+   * queued for the next flush (the page may come back), as do records over 60 KB.
+   */
   flushHidden(): void {
     if (this.stopped || this.deps.now() < this.pausedUntil) return
-    const { chunks } = chunkItems(this.queue.takeAll(), WIRE_MAX, s => this.overhead(s))
+    const items: Item[] = []
+    if (this.compressing && !this.compressing.claimed) {
+      this.compressing.claimed = true
+      items.push(...this.compressing.items)
+    }
+    items.push(...this.queue.takeAll())
+    const { chunks, oversized } = chunkItems(items, WIRE_MAX, s => this.overhead(s))
     const kept: Item[] = []
+    let budget = KEEPALIVE_BUDGET - this.keepaliveBytes
     for (const c of chunks) {
-      const url = this.url(c.signal, false), body = this.body(c)
+      const url = this.url(c.signal, false), body = this.body(c), n = utf8Length(body)
+      if (n > budget) {
+        kept.push(...c.items)
+        continue
+      }
       let ok = false
       try {
         ok = this.deps.sendBeacon?.(url, new Blob([body], { type: TEXT })) ?? false
       }
       catch { /* falls back to fetch */ }
       if (!ok) {
+        this.keepaliveBytes += n
         try {
-          void this.deps.fetch(url, { method: "POST", body, keepalive: true, credentials: "omit", headers: { "Content-Type": TEXT } }).catch(() => undefined)
+          void this.deps.fetch(url, { method: "POST", body, keepalive: true, credentials: "omit", headers: { "Content-Type": TEXT } })
+            .then(() => undefined, () => this.queue.unshift(c.items))
+            .finally(() => {
+              this.keepaliveBytes -= n
+            })
+          ok = true
         }
         catch {
-          kept.push(...c.items)
+          this.keepaliveBytes -= n
         }
       }
+      if (ok) budget -= n
+      else kept.push(...c.items)
     }
-    this.queue.unshift(kept)
+    this.queue.unshift([...kept, ...oversized])
   }
 
   private overhead(s: Signal): number {
-    return envelope(s, this.cfg.resource, this.cfg.sdkVersion, []).length
+    return utf8Length(envelope(s, this.cfg.resource, this.cfg.sdkVersion, []))
   }
 
   private body(c: Chunk): string {
     return envelope(c.signal, this.cfg.resource, this.cfg.sdkVersion, c.items.map(i => i.json))
   }
 
+  // One chunk at a time, the rest left in the queue, so a hidden flush can still send it.
   private async sendAll(): Promise<void> {
-    const gz = this.deps.compress !== undefined
-    const { chunks } = chunkItems(this.queue.takeAll(), gz ? RAW_MAX_GZIP : WIRE_MAX, s => this.overhead(s))
-    for (let k = 0; k < chunks.length; k++) {
-      const kept = await this.send(chunks[k]!)
+    const max = this.deps.compress !== undefined ? RAW_MAX_GZIP : WIRE_MAX
+    while (!this.stopped && this.queue.count > 0 && this.deps.now() >= this.pausedUntil) {
+      const { chunks } = chunkItems(this.queue.takeAll(), max, s => this.overhead(s)) // oversized records can't be sent
+      const [first, ...rest] = chunks
+      this.queue.unshift(rest.flatMap(c => c.items))
+      if (!first) return
+      const kept = await this.send(first)
       if (this.stopped) return
       if (kept.length > 0) {
-        this.queue.unshift([...kept, ...chunks.slice(k + 1).flatMap(c => c.items)])
+        this.queue.unshift(kept)
         return
       }
     }
   }
 
-  // Sends one chunk and answers the records to keep for later (none when sent or dropped). A chunk
-  // that's 60 KB or more on the wire is sent as two halves; a single record that big is dropped.
+  // Sends one chunk and answers the records to keep for later (none when sent, dropped or claimed by
+  // a hidden flush). A chunk that's 60 KB or more on the wire is sent as two halves; a single record
+  // that big is dropped.
   private async send(c: Chunk): Promise<Item[]> {
     const raw = this.body(c)
-    const z = this.deps.compress ? await this.deps.compress(raw) : undefined
+    let z: Bytes | undefined
+    if (this.deps.compress) {
+      const pending = { items: c.items, claimed: false }
+      this.compressing = pending
+      try {
+        z = await this.deps.compress(raw)
+      }
+      finally {
+        if (this.compressing === pending) this.compressing = undefined
+      }
+      if (pending.claimed) return []
+    }
     const payload: string | Bytes = z ?? raw
-    const size = typeof payload === "string" ? new Blob([payload]).size : payload.byteLength
+    const size = typeof payload === "string" ? utf8Length(payload) : payload.byteLength
     if (size >= WIRE_MAX) {
       if (c.items.length === 1) return []
       const mid = c.items.length >> 1
@@ -146,21 +198,28 @@ export class Exporter {
       if (keptFirst.length > 0 || this.stopped) return [...keptFirst, ...second.items]
       return this.send(second)
     }
+    const keepalive = this.keepaliveBytes + size <= KEEPALIVE_BUDGET
+    if (keepalive) this.keepaliveBytes += size
     let res: Response
     try {
       res = await this.deps.fetch(this.url(c.signal, z !== undefined), {
-        method: "POST", body: payload, keepalive: true, credentials: "omit", headers: { "Content-Type": TEXT },
+        method: "POST", body: payload, keepalive, credentials: "omit", headers: { "Content-Type": TEXT },
       })
     }
     catch {
       this.failures++
-      if (!this.delivered && this.failures >= MAX_DEAD_FAILURES) {
+      this.networkFailures++
+      if (!this.delivered && this.networkFailures >= MAX_DEAD_FAILURES) {
         this.stop("unreachable")
         return []
       }
       this.pause(0)
       return c.items
     }
+    finally {
+      if (keepalive) this.keepaliveBytes -= size
+    }
+    this.networkFailures = 0
     const o = classify(res.status, res.headers.get("Retry-After"), this.deps.now())
     switch (o.kind) {
       case "ok":
@@ -189,6 +248,9 @@ export class Exporter {
   private stop(r: StopReason, untilMs?: number): void {
     this.stopped = r
     this.queue.takeAll()
-    this.onStop(r, untilMs)
+    try {
+      this.onStop(r, untilMs)
+    }
+    catch { /* never reaches the page */ }
   }
 }
