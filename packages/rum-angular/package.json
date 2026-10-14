@@ -1,0 +1,45 @@
+{
+  "name": "@ezgh/rum-angular",
+  "version": "0.0.0",
+  "description": "Angular integration for @ezgh/rum: ErrorHandler and Router route templates",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum-angular"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependencies": {
+    "@ezgh/rum": "workspace:^",
+    "@angular/core": ">=19",
+    "@angular/router": ">=19",
+    "rxjs": "^7"
+  },
+  "devDependencies": {
+    "@ezgh/rum": "workspace:*",
+    "@angular/core": "catalog:",
+    "@angular/common": "catalog:",
+    "@angular/platform-browser": "catalog:",
+    "@angular/router": "catalog:",
+    "rxjs": "catalog:"
+  }
+}

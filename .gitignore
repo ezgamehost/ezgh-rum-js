@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tgz
+.packs/
+playwright-report/
+test-results/
+fixtures/react-app/dist/

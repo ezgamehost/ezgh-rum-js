@@ -1,0 +1,63 @@
+{
+  "name": "@ezgh/rum-nextjs",
+  "version": "0.0.0",
+  "description": "Next.js App Router integration for @ezgh/rum: client init, route templates, source maps and the server trace join",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum-nextjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js",
+      "default": "./dist/config.js"
+    },
+    "./instrumentation": {
+      "types": "./dist/instrumentation.d.ts",
+      "import": "./dist/instrumentation.js",
+      "default": "./dist/instrumentation.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "@ezgh/rum-build": "workspace:^"
+  },
+  "peerDependencies": {
+    "@ezgh/rum": "workspace:^",
+    "next": ">=15.4",
+    "react": ">=18",
+    "@opentelemetry/api": "^1.9"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ezgh/rum": "workspace:*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@types/react": "catalog:",
+    "@opentelemetry/api": "catalog:"
+  }
+}

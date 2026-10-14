@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"], "jsx": "react-jsx",
+    "strict": true, "noUncheckedIndexedAccess": true, "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true, "rewriteRelativeImportExtensions": true,
+    "skipLibCheck": true, "noEmit": true, "types": ["bun", "node"],
+    "paths": {
+      "@ezgh/rum": ["./packages/rum/src/index.ts"],
+      "@ezgh/rum-react": ["./packages/rum-react/src/index.ts"],
+      "@ezgh/rum-build": ["./packages/rum-build/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src", "packages/*/test", "scripts", "e2e", "fixtures", "examples/tunnel",
+              "playwright.config.ts", "eslint.config.ts"]
+}

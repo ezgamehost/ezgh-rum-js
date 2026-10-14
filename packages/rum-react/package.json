@@ -1,0 +1,48 @@
+{
+  "name": "@ezgh/rum-react",
+  "version": "0.0.0",
+  "description": "React integration for @ezgh/rum: error boundary, views and React Router route templates",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum-react"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependencies": {
+    "@ezgh/rum": "workspace:^",
+    "react": ">=18",
+    "react-router": ">=7"
+  },
+  "peerDependenciesMeta": {
+    "react-router": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ezgh/rum": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@types/react": "catalog:",
+    "react-router": "catalog:"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@ezgh/rum",
+  "version": "0.0.0",
+  "description": "Real user monitoring for web apps on EZGH Cloud: page loads, Web Vitals, requests and errors as OpenTelemetry",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "jsdelivr": "dist/rum.iife.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "web-vitals": "catalog:"
+  }
+}

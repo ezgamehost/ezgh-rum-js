@@ -1,0 +1,46 @@
+{
+  "name": "@ezgh/rum-vue",
+  "version": "0.0.0",
+  "description": "Vue integration for @ezgh/rum: error handler and Vue Router route templates",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum-vue"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "peerDependencies": {
+    "@ezgh/rum": "workspace:^",
+    "vue": "^3.3",
+    "vue-router": "^4"
+  },
+  "peerDependenciesMeta": {
+    "vue-router": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ezgh/rum": "workspace:*",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  }
+}

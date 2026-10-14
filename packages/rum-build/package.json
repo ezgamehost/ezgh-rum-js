@@ -1,0 +1,43 @@
+{
+  "name": "@ezgh/rum-build",
+  "version": "0.0.0",
+  "description": "Build plugin for @ezgh/rum (Vite, webpack, Rollup, esbuild, Rspack): debug-ID injection and source-map upload to EZGH Observability",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezgamehost/ezgh-rum-js.git",
+    "directory": "packages/rum-build"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "unplugin": "catalog:"
+  },
+  "devDependencies": {
+    "vite": "catalog:",
+    "webpack": "catalog:",
+    "rollup": "catalog:",
+    "esbuild": "catalog:"
+  }
+}
