@@ -1,0 +1,1 @@
+is an index map (with sections), which inject doesn't support: build with a regular source map
