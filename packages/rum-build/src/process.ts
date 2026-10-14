@@ -13,9 +13,9 @@ export interface EzghRumBuildOptions {
   application?: string
   /** Default env EZGH_RUM_RELEASE; required to upload. */
   release?: string
-  /** The organization's UUID; default env EZGH_ORGANIZATION_ID. */
+  /** The organization's UUID; default env EZGH_ORG. */
   organizationId?: string
-  /** The project's UUID; default env EZGH_PROJECT_ID. */
+  /** The project's UUID; default env EZGH_PROJECT. */
   projectId?: string
   /** Default env EZGH_API_KEY (setup-ezgh sets it from OIDC). */
   apiKey?: string
@@ -89,15 +89,15 @@ async function run(dir: string, o: EzghRumBuildOptions, log: (m: string) => void
   }
   const application = o.application ?? env.EZGH_RUM_APPLICATION
   const release = o.release ?? env.EZGH_RUM_RELEASE
-  const organizationId = o.organizationId ?? env.EZGH_ORGANIZATION_ID
-  const projectId = o.projectId ?? env.EZGH_PROJECT_ID
+  const organizationId = o.organizationId ?? env.EZGH_ORG
+  const projectId = o.projectId ?? env.EZGH_PROJECT
   const domain = o.domain ?? env.EZGH_DOMAIN ?? "ezghcloud.com"
   const authorization = organizationId
     ? await resolveAuthorization({ apiKey: o.apiKey, oidc: o.oidc, organizationId, domain, fetch: o.fetch }, env)
     : undefined
   const unset = [
-    !authorization && "EZGH_API_KEY (or oidc)", !organizationId && "organizationId (EZGH_ORGANIZATION_ID)",
-    !projectId && "projectId (EZGH_PROJECT_ID)", !application && "application", !release && "release",
+    !authorization && "EZGH_API_KEY (or oidc)", !organizationId && "organizationId (EZGH_ORG)",
+    !projectId && "projectId (EZGH_PROJECT)", !application && "application", !release && "release",
   ].filter(Boolean)
   if (unset.length > 0) {
     log(`ezgh-rum: debug IDs injected into ${injected} files; not uploading: set ${unset.join(", ")}`)
