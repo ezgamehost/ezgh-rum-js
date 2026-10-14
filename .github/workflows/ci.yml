@@ -32,6 +32,8 @@ jobs:
       - run: bun run check
 
   browsers:
+    # Until the Playwright suite lands (plan 25 J7), there's nothing to run.
+    if: hashFiles('playwright.config.ts') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
