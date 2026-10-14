@@ -32,23 +32,30 @@ jobs:
       - run: bun run check
 
   browsers:
-    # Until the Playwright suite lands (plan 25 J7), there's nothing to run.
-    if: hashFiles('playwright.config.ts') != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      # Until the Playwright suite lands (plan 25 J7) there's nothing to run.
+      - id: suite
+        run: if [ -f playwright.config.ts ]; then echo "present=true" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.suite.outputs.present == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.4.2
-      - uses: actions/setup-node@v7
+      - if: steps.suite.outputs.present == 'true'
+        uses: actions/setup-node@v7
         with:
           node-version: 24
-      - run: bun install --frozen-lockfile
-      - run: bun run build
-      - run: bunx playwright install --with-deps chromium firefox webkit
-      - run: bun run e2e
+      - if: steps.suite.outputs.present == 'true'
+        run: bun install --frozen-lockfile
+      - if: steps.suite.outputs.present == 'true'
+        run: bun run build
+      - if: steps.suite.outputs.present == 'true'
+        run: bunx playwright install --with-deps chromium firefox webkit
+      - if: steps.suite.outputs.present == 'true'
+        run: bun run e2e
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
