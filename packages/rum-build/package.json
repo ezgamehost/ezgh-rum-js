@@ -1,6 +1,6 @@
 {
   "name": "@ezghcloud/rum-build",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Build plugin for @ezghcloud/rum (Vite, webpack, Rollup, esbuild, Rspack): debug-ID injection and source-map upload to EZGH Observability",
   "license": "Apache-2.0",
   "type": "module",

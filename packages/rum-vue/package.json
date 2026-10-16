@@ -1,6 +1,6 @@
 {
   "name": "@ezghcloud/rum-vue",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Vue integration for @ezghcloud/rum: error handler and Vue Router route templates",
   "license": "Apache-2.0",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@ezghcloud/rum-react",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "React integration for @ezghcloud/rum: error boundary, views and React Router route templates",
   "license": "Apache-2.0",
   "type": "module",

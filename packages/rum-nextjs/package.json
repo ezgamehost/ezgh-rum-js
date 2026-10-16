@@ -1,6 +1,6 @@
 {
   "name": "@ezghcloud/rum-nextjs",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Next.js App Router integration for @ezghcloud/rum: client init, route templates, source maps and the server trace join",
   "license": "Apache-2.0",
   "type": "module",
