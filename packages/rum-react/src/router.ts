@@ -2,7 +2,7 @@
 // `path` fields join into the exact template; framework mode exposes params (useEzghRouteTemplate).
 import { useEffect } from "react"
 import { useLocation, useParams } from "react-router"
-import { _integration } from "@ezgh/rum"
+import { _integration } from "@ezghcloud/rum"
 
 export interface RouteMatchLike { route: { path?: string } }
 export interface RouterStateLike { location: { pathname: string }, matches: readonly RouteMatchLike[] }

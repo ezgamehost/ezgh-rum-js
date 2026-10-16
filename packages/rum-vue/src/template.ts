@@ -1,4 +1,4 @@
-import { _integration } from "@ezgh/rum"
+import { _integration } from "@ezghcloud/rum"
 
 export interface RouteLike { path: string, matched: ReadonlyArray<{ path: string }> }
 

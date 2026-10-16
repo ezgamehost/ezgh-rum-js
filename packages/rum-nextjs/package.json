@@ -1,7 +1,7 @@
 {
-  "name": "@ezgh/rum-nextjs",
+  "name": "@ezghcloud/rum-nextjs",
   "version": "0.0.0",
-  "description": "Next.js App Router integration for @ezgh/rum: client init, route templates, source maps and the server trace join",
+  "description": "Next.js App Router integration for @ezghcloud/rum: client init, route templates, source maps and the server trace join",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -35,14 +35,13 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "dependencies": {
-    "@ezgh/rum-build": "workspace:^"
+    "@ezghcloud/rum-build": "workspace:^"
   },
   "peerDependencies": {
-    "@ezgh/rum": "workspace:^",
+    "@ezghcloud/rum": "workspace:^",
     "next": ">=15.4",
     "react": ">=18",
     "@opentelemetry/api": "^1.9"
@@ -53,7 +52,7 @@
     }
   },
   "devDependencies": {
-    "@ezgh/rum": "workspace:*",
+    "@ezghcloud/rum": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

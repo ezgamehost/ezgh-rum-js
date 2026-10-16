@@ -8,14 +8,14 @@
     "e2e:prod": "playwright test -c playwright.prod.config.ts"
   },
   "dependencies": {
-    "@ezgh/rum": "workspace:*",
-    "@ezgh/rum-react": "workspace:*",
+    "@ezghcloud/rum": "workspace:*",
+    "@ezghcloud/rum-react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:"
   },
   "devDependencies": {
-    "@ezgh/rum-build": "workspace:*",
+    "@ezghcloud/rum-build": "workspace:*",
     "@playwright/test": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

@@ -2,7 +2,7 @@
 // view names from Vue Router's matched route patterns.
 import type { App, ComponentPublicInstance, Plugin } from "vue"
 import type { Router } from "vue-router"
-import { _integration, init, type InitOptions } from "@ezgh/rum"
+import { _integration, init, type InitOptions } from "@ezghcloud/rum"
 import { vueTemplate } from "./template.ts"
 
 export { vueTemplate } from "./template.ts"

@@ -1,7 +1,7 @@
 # Tunnel handlers
 
 Ad blockers drop requests to third-party telemetry hosts. With `init({ tunnel: "/_ezgh" })`,
-`@ezgh/rum` sends to your own origin instead (`POST /_ezgh?path=/v1/logs&ct=…&enc=gzip&sv=…`), and
+`@ezghcloud/rum` sends to your own origin instead (`POST /_ezgh?path=/v1/logs&ct=…&enc=gzip&sv=…`), and
 one of these handlers forwards the request to `https://obs-browser.ezghcloud.com`.
 
 Every handler:

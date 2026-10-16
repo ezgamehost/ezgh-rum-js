@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copies ezgh-cli's debug-ID injection vectors (internal/sourcemaps/testdata/inject, owned by the
 # CLI: plan 25 L2) into packages/rum-build/test/vectors/inject and records the CLI commit in
-# packages/rum-build/test/vectors/CLI_REV. @ezgh/rum-build must reproduce every vector byte for byte.
+# packages/rum-build/test/vectors/CLI_REV. @ezghcloud/rum-build must reproduce every vector byte for byte.
 #   scripts/sync-inject-vectors.sh <ezgh-cli checkout or worktree>
 set -euo pipefail
 cli="${1:?usage: scripts/sync-inject-vectors.sh <ezgh-cli checkout>}"

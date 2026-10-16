@@ -1,4 +1,4 @@
-// Package ezghtunnel forwards @ezgh/rum's tunnel requests to obs-browser.
+// Package ezghtunnel forwards @ezghcloud/rum's tunnel requests to obs-browser.
 //
 // tunnel.go — mux.Handle("/_ezgh", ezghtunnel.Handler("")), then init({ tunnel: "/_ezgh" }).
 // Behind a load balancer, put the browser's address in r.RemoteAddr first (for example with a

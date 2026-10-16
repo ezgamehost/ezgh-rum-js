@@ -1,7 +1,7 @@
 {
-  "name": "@ezgh/rum-angular",
+  "name": "@ezghcloud/rum-angular",
   "version": "0.0.0",
-  "description": "Angular integration for @ezgh/rum: ErrorHandler and Router route templates",
+  "description": "Angular integration for @ezghcloud/rum: ErrorHandler and Router route templates",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -25,17 +25,16 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "peerDependencies": {
-    "@ezgh/rum": "workspace:^",
+    "@ezghcloud/rum": "workspace:^",
     "@angular/core": ">=19",
     "@angular/router": ">=19",
     "rxjs": "^7"
   },
   "devDependencies": {
-    "@ezgh/rum": "workspace:*",
+    "@ezghcloud/rum": "workspace:*",
     "@angular/core": "catalog:",
     "@angular/common": "catalog:",
     "@angular/platform-browser": "catalog:",

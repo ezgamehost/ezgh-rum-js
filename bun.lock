@@ -29,14 +29,14 @@
     "fixtures/react-app": {
       "name": "rum-fixture-react-app",
       "dependencies": {
-        "@ezgh/rum": "workspace:*",
-        "@ezgh/rum-react": "workspace:*",
+        "@ezghcloud/rum": "workspace:*",
+        "@ezghcloud/rum-react": "workspace:*",
         "react": "catalog:",
         "react-dom": "catalog:",
         "react-router": "catalog:",
       },
       "devDependencies": {
-        "@ezgh/rum-build": "workspace:*",
+        "@ezghcloud/rum-build": "workspace:*",
         "@playwright/test": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
@@ -45,32 +45,32 @@
       },
     },
     "packages/rum": {
-      "name": "@ezgh/rum",
+      "name": "@ezghcloud/rum",
       "version": "0.0.0",
       "dependencies": {
         "web-vitals": "catalog:",
       },
     },
     "packages/rum-angular": {
-      "name": "@ezgh/rum-angular",
+      "name": "@ezghcloud/rum-angular",
       "version": "0.0.0",
       "devDependencies": {
         "@angular/common": "catalog:",
         "@angular/core": "catalog:",
         "@angular/platform-browser": "catalog:",
         "@angular/router": "catalog:",
-        "@ezgh/rum": "workspace:*",
+        "@ezghcloud/rum": "workspace:*",
         "rxjs": "catalog:",
       },
       "peerDependencies": {
         "@angular/core": ">=19",
         "@angular/router": ">=19",
-        "@ezgh/rum": "workspace:^",
+        "@ezghcloud/rum": "workspace:^",
         "rxjs": "^7",
       },
     },
     "packages/rum-build": {
-      "name": "@ezgh/rum-build",
+      "name": "@ezghcloud/rum-build",
       "version": "0.0.0",
       "dependencies": {
         "unplugin": "catalog:",
@@ -83,13 +83,13 @@
       },
     },
     "packages/rum-nextjs": {
-      "name": "@ezgh/rum-nextjs",
+      "name": "@ezghcloud/rum-nextjs",
       "version": "0.0.0",
       "dependencies": {
-        "@ezgh/rum-build": "workspace:^",
+        "@ezghcloud/rum-build": "workspace:^",
       },
       "devDependencies": {
-        "@ezgh/rum": "workspace:*",
+        "@ezghcloud/rum": "workspace:*",
         "@opentelemetry/api": "catalog:",
         "@types/react": "catalog:",
         "next": "catalog:",
@@ -97,7 +97,7 @@
         "react-dom": "catalog:",
       },
       "peerDependencies": {
-        "@ezgh/rum": "workspace:^",
+        "@ezghcloud/rum": "workspace:^",
         "@opentelemetry/api": "^1.9",
         "next": ">=15.4",
         "react": ">=18",
@@ -107,31 +107,31 @@
       ],
     },
     "packages/rum-react": {
-      "name": "@ezgh/rum-react",
+      "name": "@ezghcloud/rum-react",
       "version": "0.0.0",
       "devDependencies": {
-        "@ezgh/rum": "workspace:*",
+        "@ezghcloud/rum": "workspace:*",
         "@types/react": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "react-router": "catalog:",
       },
       "peerDependencies": {
-        "@ezgh/rum": "workspace:^",
+        "@ezghcloud/rum": "workspace:^",
         "react": ">=18",
         "react-router": ">=7",
       },
     },
     "packages/rum-vue": {
-      "name": "@ezgh/rum-vue",
+      "name": "@ezghcloud/rum-vue",
       "version": "0.0.0",
       "devDependencies": {
-        "@ezgh/rum": "workspace:*",
+        "@ezghcloud/rum": "workspace:*",
         "vue": "catalog:",
         "vue-router": "catalog:",
       },
       "peerDependencies": {
-        "@ezgh/rum": "workspace:^",
+        "@ezghcloud/rum": "workspace:^",
         "vue": "^3.3",
         "vue-router": "^4",
       },
@@ -266,17 +266,17 @@
 
     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.7.3", "", { "dependencies": { "@eslint/core": "^1.2.1", "levn": "^0.4.1" } }, "sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q=="],
 
-    "@ezgh/rum": ["@ezgh/rum@workspace:packages/rum"],
+    "@ezghcloud/rum": ["@ezghcloud/rum@workspace:packages/rum"],
 
-    "@ezgh/rum-angular": ["@ezgh/rum-angular@workspace:packages/rum-angular"],
+    "@ezghcloud/rum-angular": ["@ezghcloud/rum-angular@workspace:packages/rum-angular"],
 
-    "@ezgh/rum-build": ["@ezgh/rum-build@workspace:packages/rum-build"],
+    "@ezghcloud/rum-build": ["@ezghcloud/rum-build@workspace:packages/rum-build"],
 
-    "@ezgh/rum-nextjs": ["@ezgh/rum-nextjs@workspace:packages/rum-nextjs"],
+    "@ezghcloud/rum-nextjs": ["@ezghcloud/rum-nextjs@workspace:packages/rum-nextjs"],
 
-    "@ezgh/rum-react": ["@ezgh/rum-react@workspace:packages/rum-react"],
+    "@ezghcloud/rum-react": ["@ezghcloud/rum-react@workspace:packages/rum-react"],
 
-    "@ezgh/rum-vue": ["@ezgh/rum-vue@workspace:packages/rum-vue"],
+    "@ezghcloud/rum-vue": ["@ezghcloud/rum-vue@workspace:packages/rum-vue"],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 

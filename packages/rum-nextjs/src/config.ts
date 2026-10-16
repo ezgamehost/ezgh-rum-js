@@ -4,9 +4,9 @@
 // <meta name="traceparent"> (experimental.clientTraceMetadata) so documentLoad joins the server trace.
 import { resolve } from "node:path"
 import type { NextConfig } from "next"
-import { processOutput, type EzghRumBuildOptions } from "@ezgh/rum-build"
+import { processOutput, type EzghRumBuildOptions } from "@ezghcloud/rum-build"
 
-export type { EzghRumBuildOptions } from "@ezgh/rum-build"
+export type { EzghRumBuildOptions } from "@ezghcloud/rum-build"
 
 export function withEzghRum(config: NextConfig, options: EzghRumBuildOptions = {}): NextConfig {
   return wrap(config, options, processOutput)

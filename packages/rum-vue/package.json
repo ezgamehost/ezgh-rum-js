@@ -1,7 +1,7 @@
 {
-  "name": "@ezgh/rum-vue",
+  "name": "@ezghcloud/rum-vue",
   "version": "0.0.0",
-  "description": "Vue integration for @ezgh/rum: error handler and Vue Router route templates",
+  "description": "Vue integration for @ezghcloud/rum: error handler and Vue Router route templates",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -25,11 +25,10 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "peerDependencies": {
-    "@ezgh/rum": "workspace:^",
+    "@ezghcloud/rum": "workspace:^",
     "vue": "^3.3",
     "vue-router": "^4"
   },
@@ -39,7 +38,7 @@
     }
   },
   "devDependencies": {
-    "@ezgh/rum": "workspace:*",
+    "@ezghcloud/rum": "workspace:*",
     "vue": "catalog:",
     "vue-router": "catalog:"
   }

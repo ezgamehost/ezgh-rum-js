@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import type { processOutput } from "@ezgh/rum-build"
+import type { processOutput } from "@ezghcloud/rum-build"
 import { wrap } from "../src/config.ts"
 import type { NextConfig } from "next"
 

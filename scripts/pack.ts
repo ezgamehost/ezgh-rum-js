@@ -1,5 +1,5 @@
 // Packs the six packages into .packs/ for `npm publish` (the release workflow) and checks them:
-// no `workspace:` or `catalog:` range may survive in a tarball's package.json. @ezgh/rum's README
+// no `workspace:` or `catalog:` range may survive in a tarball's package.json. @ezghcloud/rum's README
 // gets the script tag with the IIFE's SRI hash in the packed copy only (the repository's README
 // keeps the placeholder). --dry-run tolerates a missing IIFE (before the core exists).
 import { $ } from "bun"
@@ -20,7 +20,7 @@ else if (!dryRun) throw new Error(`${iife} is missing: run bun run build first`)
 
 const rumVersion = (JSON.parse(readFileSync("packages/rum/package.json", "utf8")) as { version: string }).version
 const tag = integrity
-  ? `<script src="https://cdn.jsdelivr.net/npm/@ezgh/rum@${rumVersion}/dist/rum.iife.js"\n        integrity="${integrity}" crossorigin="anonymous"></script>\n<script>EzghRum.init({ token: "ezgh_ct_…", release: "…" })</script>`
+  ? `<script src="https://cdn.jsdelivr.net/npm/@ezghcloud/rum@${rumVersion}/dist/rum.iife.js"\n        integrity="${integrity}" crossorigin="anonymous"></script>\n<script>EzghRum.init({ token: "ezgh_ct_…", release: "…" })</script>`
   : undefined
 
 const notes: string[] = []

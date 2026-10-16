@@ -1,17 +1,17 @@
-# @ezgh/rum-build
+# @ezghcloud/rum-build
 
-Build plugin for [`@ezgh/rum`](https://www.npmjs.com/package/@ezgh/rum): adds a debug ID to every
+Build plugin for [`@ezghcloud/rum`](https://www.npmjs.com/package/@ezghcloud/rum): adds a debug ID to every
 emitted JavaScript file and its source map, then uploads the maps to EZGH Observability, so errors
 are symbolicated whatever the file names or CDN. Works with Vite, webpack, Rollup, esbuild and
 Rspack. The same injection as `ezgh obs sourcemaps inject`: running both is harmless.
 
 ```sh
-npm install -D @ezgh/rum-build
+npm install -D @ezghcloud/rum-build
 ```
 
 ```ts
 // vite.config.ts
-import { ezghRumBuild } from "@ezgh/rum-build"
+import { ezghRumBuild } from "@ezghcloud/rum-build"
 
 export default defineConfig({
   build: { sourcemap: "hidden" },

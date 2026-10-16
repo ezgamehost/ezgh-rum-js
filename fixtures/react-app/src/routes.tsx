@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, Outlet, useParams, type RouteObject } from "react-router"
-import { consent } from "@ezgh/rum"
-import { EzghErrorBoundary } from "@ezgh/rum-react"
+import { consent } from "@ezghcloud/rum"
+import { EzghErrorBoundary } from "@ezghcloud/rum-react"
 
 const ct = new URLSearchParams(location.search).get("ct") ?? ""
 

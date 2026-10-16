@@ -1,15 +1,15 @@
-# @ezgh/rum-react
+# @ezghcloud/rum-react
 
-React integration for [`@ezgh/rum`](https://www.npmjs.com/package/@ezgh/rum): an error boundary
+React integration for [`@ezghcloud/rum`](https://www.npmjs.com/package/@ezghcloud/rum): an error boundary
 that reports render errors, manual views, and route templates from React Router.
 
 ```sh
-npm install @ezgh/rum @ezgh/rum-react
+npm install @ezghcloud/rum @ezghcloud/rum-react
 ```
 
 ```tsx
-import { init } from "@ezgh/rum"
-import { EzghErrorBoundary, instrumentReactRouter } from "@ezgh/rum-react"
+import { init } from "@ezghcloud/rum"
+import { EzghErrorBoundary, instrumentReactRouter } from "@ezghcloud/rum-react"
 import { createBrowserRouter, RouterProvider } from "react-router"
 
 init({ token: "ezgh_ct_…", release: "…" })

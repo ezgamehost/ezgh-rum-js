@@ -2,16 +2,16 @@
 // ≤ 3 KB over core). KB is 1000 bytes, the stricter reading.
 type Budget = { name: string, entry: string, external: string[], limit: number }
 const BUDGETS: Budget[] = [
-  { name: "@ezgh/rum", entry: "packages/rum/src/index.ts", external: [], limit: 25_000 },
-  { name: "@ezgh/rum (IIFE)", entry: "packages/rum/src/iife.ts", external: [], limit: 25_000 },
-  { name: "@ezgh/rum-react", entry: "packages/rum-react/src/index.ts",
-    external: ["@ezgh/rum", "react", "react/jsx-runtime", "react-router"], limit: 3_000 },
-  { name: "@ezgh/rum-nextjs", entry: "packages/rum-nextjs/src/index.ts",
-    external: ["@ezgh/rum", "react", "react/jsx-runtime", "next/navigation"], limit: 3_000 },
-  { name: "@ezgh/rum-vue", entry: "packages/rum-vue/src/index.ts",
-    external: ["@ezgh/rum", "vue", "vue-router"], limit: 3_000 },
-  { name: "@ezgh/rum-angular", entry: "packages/rum-angular/src/index.ts",
-    external: ["@ezgh/rum", "@angular/core", "@angular/router", "rxjs"], limit: 3_000 },
+  { name: "@ezghcloud/rum", entry: "packages/rum/src/index.ts", external: [], limit: 25_000 },
+  { name: "@ezghcloud/rum (IIFE)", entry: "packages/rum/src/iife.ts", external: [], limit: 25_000 },
+  { name: "@ezghcloud/rum-react", entry: "packages/rum-react/src/index.ts",
+    external: ["@ezghcloud/rum", "react", "react/jsx-runtime", "react-router"], limit: 3_000 },
+  { name: "@ezghcloud/rum-nextjs", entry: "packages/rum-nextjs/src/index.ts",
+    external: ["@ezghcloud/rum", "react", "react/jsx-runtime", "next/navigation"], limit: 3_000 },
+  { name: "@ezghcloud/rum-vue", entry: "packages/rum-vue/src/index.ts",
+    external: ["@ezghcloud/rum", "vue", "vue-router"], limit: 3_000 },
+  { name: "@ezghcloud/rum-angular", entry: "packages/rum-angular/src/index.ts",
+    external: ["@ezghcloud/rum", "@angular/core", "@angular/router", "rxjs"], limit: 3_000 },
 ]
 let failed = false
 for (const b of BUDGETS) {

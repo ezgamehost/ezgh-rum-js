@@ -1,8 +1,8 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { RouterProvider, createBrowserRouter } from "react-router"
-import { consent, flush, getSessionId, init, setUser } from "@ezgh/rum"
-import { instrumentReactRouter } from "@ezgh/rum-react"
+import { consent, flush, getSessionId, init, setUser } from "@ezghcloud/rum"
+import { instrumentReactRouter } from "@ezghcloud/rum-react"
 import { routes } from "./routes.tsx"
 
 const q = new URLSearchParams(location.search)

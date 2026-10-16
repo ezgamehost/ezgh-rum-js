@@ -6,9 +6,9 @@
     "allowImportingTsExtensions": true, "rewriteRelativeImportExtensions": true,
     "skipLibCheck": true, "noEmit": true, "types": ["bun", "node"],
     "paths": {
-      "@ezgh/rum": ["./packages/rum/src/index.ts"],
-      "@ezgh/rum-react": ["./packages/rum-react/src/index.ts"],
-      "@ezgh/rum-build": ["./packages/rum-build/src/index.ts"]
+      "@ezghcloud/rum": ["./packages/rum/src/index.ts"],
+      "@ezghcloud/rum-react": ["./packages/rum-react/src/index.ts"],
+      "@ezghcloud/rum-build": ["./packages/rum-build/src/index.ts"]
     }
   },
   "include": ["packages/*/src", "packages/*/test", "scripts", "e2e", "fixtures", "examples/tunnel",

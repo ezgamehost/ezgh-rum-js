@@ -1,6 +1,6 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
-import { ezghRumBuild } from "@ezgh/rum-build"
+import { ezghRumBuild } from "@ezghcloud/rum-build"
 
 // EZGH_RUM_TOKEN, EZGH_RUM_RELEASE and EZGH_RUM_ENDPOINT are read at build. Without an endpoint the
 // app talks to the fake intake (fixtures/fake-intake) and its traced API; with one (I4, e2e:prod)

@@ -2,9 +2,9 @@
 // App Router's route template (dynamic segments `:name`, catch-alls `:name*`).
 import { useEffect } from "react"
 import { useParams, usePathname } from "next/navigation"
-import { _integration, init, type InitOptions } from "@ezgh/rum"
+import { _integration, init, type InitOptions } from "@ezghcloud/rum"
 
-export type { InitOptions } from "@ezgh/rum"
+export type { InitOptions } from "@ezghcloud/rum"
 
 let initialized = false
 

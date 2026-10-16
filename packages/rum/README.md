@@ -1,4 +1,4 @@
-# @ezgh/rum
+# @ezghcloud/rum
 
 Real user monitoring for web apps on EZGH Cloud: page loads, route changes, Web Vitals, requests
 and errors as OpenTelemetry. Create a browser app (a client token) in the EZGH console under
@@ -7,11 +7,11 @@ Observability → Real user monitoring.
 ## Install
 
 ```sh
-npm install @ezgh/rum
+npm install @ezghcloud/rum
 ```
 
 ```ts
-import { init } from "@ezgh/rum"
+import { init } from "@ezghcloud/rum"
 
 init({
   token: "ezgh_ct_…",            // the browser app's client token (public by design)
@@ -20,7 +20,7 @@ init({
 ```
 
 Call `init` as early as you can, once. Framework packages add error boundaries and route
-templates: `@ezgh/rum-react`, `@ezgh/rum-nextjs`, `@ezgh/rum-vue`, `@ezgh/rum-angular`.
+templates: `@ezghcloud/rum-react`, `@ezghcloud/rum-nextjs`, `@ezghcloud/rum-vue`, `@ezghcloud/rum-angular`.
 
 ### Script tag
 

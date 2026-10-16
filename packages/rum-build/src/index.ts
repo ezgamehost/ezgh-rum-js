@@ -1,4 +1,4 @@
-// @ezgh/rum-build: one unplugin whose hooks all run processOutput after the bundler wrote its
+// @ezghcloud/rum-build: one unplugin whose hooks all run processOutput after the bundler wrote its
 // files, so the same on-disk algorithm serves Vite, Rollup, webpack, Rspack, esbuild and Next.js.
 import { dirname, resolve } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"

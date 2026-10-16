@@ -4,7 +4,7 @@
 import { ErrorHandler, inject, makeEnvironmentProviders, provideAppInitializer, type EnvironmentProviders } from "@angular/core"
 import { NavigationEnd, Router } from "@angular/router"
 import { filter } from "rxjs"
-import { _integration, init, type InitOptions } from "@ezgh/rum"
+import { _integration, init, type InitOptions } from "@ezghcloud/rum"
 import { angularTemplate } from "./template.ts"
 
 export { angularTemplate } from "./template.ts"

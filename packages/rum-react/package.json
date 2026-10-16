@@ -1,7 +1,7 @@
 {
-  "name": "@ezgh/rum-react",
+  "name": "@ezghcloud/rum-react",
   "version": "0.0.0",
-  "description": "React integration for @ezgh/rum: error boundary, views and React Router route templates",
+  "description": "React integration for @ezghcloud/rum: error boundary, views and React Router route templates",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -25,16 +25,15 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "peerDependencies": {
-    "@ezgh/rum": "workspace:^",
+    "@ezghcloud/rum": "workspace:^",
     "react": ">=18",
     "react-router": ">=7"
   },
   "devDependencies": {
-    "@ezgh/rum": "workspace:*",
+    "@ezghcloud/rum": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "@types/react": "catalog:",

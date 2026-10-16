@@ -123,7 +123,7 @@ export function flush(): Promise<void> {
   return r.exporter.flush().catch(() => undefined)
 }
 
-/** Internal: used by @ezgh/rum-react, -nextjs, -vue and -angular. Not part of the public API. */
+/** Internal: used by @ezghcloud/rum-react, -nextjs, -vue and -angular. Not part of the public API. */
 export const _integration = {
   setRouteTemplate(template: string): void {
     configurable((r) => {

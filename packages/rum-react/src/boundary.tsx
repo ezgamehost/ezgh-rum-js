@@ -1,6 +1,6 @@
 // An error boundary that reports render errors (source `boundary`) with React's component stack.
 import { Component, type ErrorInfo, type ReactNode } from "react"
-import { _integration, type AttrValue } from "@ezgh/rum"
+import { _integration, type AttrValue } from "@ezghcloud/rum"
 
 export interface EzghErrorBoundaryProps {
   children?: ReactNode

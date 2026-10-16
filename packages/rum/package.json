@@ -1,5 +1,5 @@
 {
-  "name": "@ezgh/rum",
+  "name": "@ezghcloud/rum",
   "version": "0.0.0",
   "description": "Real user monitoring for web apps on EZGH Cloud: page loads, Web Vitals, requests and errors as OpenTelemetry",
   "license": "Apache-2.0",
@@ -26,8 +26,7 @@
     "LICENSE"
   ],
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "dependencies": {
     "web-vitals": "catalog:"

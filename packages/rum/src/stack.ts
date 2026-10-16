@@ -1,5 +1,5 @@
 // Script URLs in V8, SpiderMonkey and JavaScriptCore stacks. The registration snippet (CLI L2,
-// @ezgh/rum-build) keys _ezghDebugIds by the Error stack of the injected file's own top-level code,
+// @ezghcloud/rum-build) keys _ezghDebugIds by the Error stack of the injected file's own top-level code,
 // whose first frame is that file's URL.
 export const STACK_URL = /(?:blob:)?(?:https?|file):\/\/[^\s()]+?(?=:\d+:\d+)/g
 export function stackUrls(stack: string): string[] {

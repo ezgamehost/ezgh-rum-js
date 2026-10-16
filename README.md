@@ -8,14 +8,25 @@ Observability. Errors are grouped into issues, symbolicated with the source maps
 
 | Package | What it is | Size (gzipped) |
 | --- | --- | --- |
-| [`@ezgh/rum`](packages/rum) | The SDK: sessions, views, spans, vitals, errors, the exporter; ESM and a script tag (`window.EzghRum`) | ≤ 25 KB |
-| [`@ezgh/rum-react`](packages/rum-react) | `EzghErrorBoundary`, `useEzghView`, React Router route templates | ≤ 3 KB over core |
-| [`@ezgh/rum-nextjs`](packages/rum-nextjs) | Next.js App Router: `<EzghRum>`, `useEzghErrorReport`, `withEzghRum`, `ezghTraceparent` | ≤ 3 KB over core |
-| [`@ezgh/rum-vue`](packages/rum-vue) | Vue plugin: error handler and Vue Router templates | ≤ 3 KB over core |
-| [`@ezgh/rum-angular`](packages/rum-angular) | `provideEzghRum` and `EzghErrorHandler` | ≤ 3 KB over core |
-| [`@ezgh/rum-build`](packages/rum-build) | Build plugin for Vite, webpack, Rollup, esbuild and Rspack: debug IDs and source-map upload | build time only |
+| [`@ezghcloud/rum`](packages/rum) | The SDK: sessions, views, spans, vitals, errors, the exporter; ESM and a script tag (`window.EzghRum`) | ≤ 25 KB |
+| [`@ezghcloud/rum-react`](packages/rum-react) | `EzghErrorBoundary`, `useEzghView`, React Router route templates | ≤ 3 KB over core |
+| [`@ezghcloud/rum-nextjs`](packages/rum-nextjs) | Next.js App Router: `<EzghRum>`, `useEzghErrorReport`, `withEzghRum`, `ezghTraceparent` | ≤ 3 KB over core |
+| [`@ezghcloud/rum-vue`](packages/rum-vue) | Vue plugin: error handler and Vue Router templates | ≤ 3 KB over core |
+| [`@ezghcloud/rum-angular`](packages/rum-angular) | `provideEzghRum` and `EzghErrorHandler` | ≤ 3 KB over core |
+| [`@ezghcloud/rum-build`](packages/rum-build) | Build plugin for Vite, webpack, Rollup, esbuild and Rspack: debug IDs and source-map upload | build time only |
 
 `bun run size` enforces the budgets.
+
+## Install
+
+```sh
+npm install @ezghcloud/rum                          # plus the integration for your framework:
+npm install @ezghcloud/rum-react                    # or rum-nextjs, rum-vue, rum-angular
+npm install -D @ezghcloud/rum-build                 # source maps (rum-nextjs includes it)
+```
+
+The script tag (`window.EzghRum`) is served by jsDelivr from `@ezghcloud/rum`; each release's notes
+carry the tag with its SRI hash.
 
 ## What it collects
 
@@ -70,7 +81,24 @@ bun run e2e     # Playwright: the fixture app against a fake intake in Chromium,
 
 `bunx playwright install chromium firefox webkit` installs the browsers. The debug-ID injection
 vectors in `packages/rum-build/test/vectors` come from ezgh-cli (`scripts/sync-inject-vectors.sh`),
-so `@ezgh/rum-build` and `ezgh obs sourcemaps inject` produce identical output.
+so `@ezghcloud/rum-build` and `ezgh obs sourcemaps inject` produce identical output.
+
+## Releasing
+
+The packages are published to npm under `@ezghcloud` by `.github/workflows/release.yml` with npm
+trusted publishing (GitHub Actions OIDC, provenance attached; there is no npm token).
+
+1. `bun scripts/version.ts X.Y.Z` sets all six versions. Commit that on main and push.
+2. Tag the commit and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. The workflow
+   checks that the tag matches every package version, runs `bun run check`, packs, publishes in
+   dependency order (skipping versions already on npm, so a failed run can be re-run) and creates
+   the GitHub release.
+
+Adding a package: before its first tagged release, the npm owner runs
+`scripts/npm-trust.sh @ezghcloud/<name>` once (logged in to npm with 2FA). npm can only trust a
+package that exists, so the script publishes a deprecated 0.0.0 placeholder if needed, trusts this
+repository's `release.yml` and requires 2FA for any manual publish. Also add the package to the
+publish order in `release.yml` and to `scripts/pack.ts`, `scripts/version.ts` and `scripts/build.ts`.
 
 ## License
 

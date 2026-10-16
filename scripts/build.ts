@@ -1,5 +1,5 @@
 // Builds every package into its dist/: unminified ESM (dependencies and peers external, as npm
-// consumers bundle them), .d.ts files from tsc, and for @ezgh/rum the minified script-tag IIFE
+// consumers bundle them), .d.ts files from tsc, and for @ezghcloud/rum the minified script-tag IIFE
 // that jsDelivr serves (dist/rum.iife.js).
 import { $ } from "bun"
 
